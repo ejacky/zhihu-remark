@@ -10,7 +10,9 @@
   "host_permissions": [
     "https://www.zhihu.com/*",
     "https://api.openai.com/*",
-    "https://api.anthropic.com/*"
+    "https://api.anthropic.com/*",
+    "https://api.deepseek.com/*",
+    "https://api.moonshot.cn/*"
   ],
   "background": {
     "service_worker": "src/background/index.js"

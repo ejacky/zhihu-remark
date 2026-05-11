@@ -33,7 +33,15 @@
           <label>AI 提供商</label>
           <div class="radio-group">
             <label class="radio-label">
-              <input type="radio" name="provider" value="openai" checked>
+              <input type="radio" name="provider" value="deepseek" checked>
+              <span>DeepSeek</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="provider" value="kimi">
+              <span>Kimi (Moonshot)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="provider" value="openai">
               <span>OpenAI</span>
             </label>
             <label class="radio-label">
@@ -63,6 +71,8 @@
           <label for="model">模型</label>
           <select id="model">
             <optgroup label="OpenAI">
+              <option value="gpt-5.5">GPT-5.5</option>
+              <option value="gpt-5.4-pro">GPT-5.4 Pro</option>
               <option value="gpt-4o">GPT-4o</option>
               <option value="gpt-4o-mini" selected>GPT-4o Mini</option>
               <option value="gpt-4-turbo">GPT-4 Turbo</option>
@@ -242,7 +252,8 @@
       <button class="btn btn--primary" id="btnSave">保存设置</button>
     </footer>
   </div>
-
+  <script src="../shared/constants.js"></script>
+  <script src="../shared/prompts.js"></script>
   <script src="index.js"></script>
 </body>
 </html>

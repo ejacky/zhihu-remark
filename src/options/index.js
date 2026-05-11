@@ -43,14 +43,14 @@
     document.querySelector(`input[name="provider"][value="${config.provider}"]`).checked = true;
     document.getElementById('apiKey').value = config.apiKey || '';
     document.getElementById('apiBase').value = config.apiBase || '';
-    document.getElementById('model').value = config.model || 'gpt-4o-mini';
+    document.getElementById('model').value = config.model || 'deepseek-chat';
     document.getElementById('temperature').value = config.temperature ?? 0.7;
     document.getElementById('temperatureValue').textContent = config.temperature ?? 0.7;
     document.getElementById('maxTokens').value = config.maxTokens || 2048;
 
-    // 显示/隐藏 apiBase
-    document.getElementById('apiBaseGroup').style.display =
-      config.provider === 'custom' ? 'block' : 'none';
+    // 显示/隐藏 apiBase（仅自定义 API 显示）
+    const needsCustomBase = config.provider === 'custom';
+    document.getElementById('apiBaseGroup').style.display = needsCustomBase ? 'block' : 'none';
 
     // 风格
     document.querySelectorAll('.style-card').forEach(card => {
@@ -196,8 +196,13 @@
   // 提供商切换
   document.querySelectorAll('input[name="provider"]').forEach(radio => {
     radio.addEventListener('change', () => {
-      document.getElementById('apiBaseGroup').style.display =
-        radio.value === 'custom' ? 'block' : 'none';
+      const isCustom = radio.value === 'custom';
+      document.getElementById('apiBaseGroup').style.display = isCustom ? 'block' : 'none';
+      // 同步切换到该提供商的默认模型
+      const defaults = CONSTANTS.PROVIDER_DEFAULTS[radio.value];
+      if (defaults && defaults.models.length > 0) {
+        document.getElementById('model').value = defaults.models[0];
+      }
     });
   });
 

@@ -97,7 +97,7 @@
 ### 3.2 配置功能
 
 #### FR-006：API 配置
-- 支持 OpenAI、Claude、自定义 API
+- 支持 DeepSeek、Kimi、OpenAI、Claude、自定义 API
 - 配置 API Key、模型、Base URL
 - Temperature 和 Max Tokens 调节
 
@@ -188,7 +188,7 @@
 | AI 生成不准确反驳 | 中 | 高 | 强制用户审核，Prompt 要求标注不确定内容 |
 | 被知乎检测为自动化工具 | 低 | 高 | 不自动发布，完全人工触发 |
 | 知乎页面结构更新 | 高 | 中 | 多策略内容提取，定期维护 |
-| API 费用过高 | 低 | 中 | 支持低成本模型（GPT-4o-mini） |
+| API 费用过高 | 低 | 中 | 支持低成本模型（DeepSeek、GPT-4o-mini） |
 
 ### 6.2 法律与合规
 - 用户需自行承担使用 AI 生成内容的责任

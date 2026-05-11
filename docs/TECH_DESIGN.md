@@ -25,6 +25,8 @@
 │           │ HTTPS                                             │
 │           ↓                                                  │
 │  ┌─────────────────┐     ┌─────────────────┐               │
+│  │  DeepSeek API    │     │  Kimi API        │               │
+│  │(api.deepseek.com)│     │(api.moonshot.cn) │               │
 │  │   OpenAI API     │     │  Claude API      │               │
 │  │  (api.openai.com)│     │(api.anthropic.com)│              │
 │  └─────────────────┘     └─────────────────┘               │
@@ -39,7 +41,7 @@
 | 后台逻辑 | Vanilla JS | Service Worker |
 | 配置页面 | HTML + CSS + JS | 原生实现 |
 | 存储 | chrome.storage.local | 本地持久化 |
-| AI API | REST API | OpenAI / Claude / 自定义 |
+| AI API | REST API | DeepSeek / Kimi / OpenAI / Claude / 自定义 |
 
 ---
 
@@ -189,6 +191,44 @@ Content Script ↔ Service Worker 通信：
 | SHOW_NOTIFICATION | B→C | `{ message, type }` | `{ received }` |
 
 ### 4.2 外部 AI API
+
+#### DeepSeek Chat Completions（OpenAI 兼容）
+```
+POST https://api.deepseek.com/v1/chat/completions
+Headers:
+  Authorization: Bearer {apiKey}
+  Content-Type: application/json
+Body:
+{
+  "model": "deepseek-chat",
+  "messages": [
+    { "role": "system", "content": "..." },
+    { "role": "user", "content": "..." }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "response_format": { "type": "json_object" }
+}
+```
+
+#### Kimi Chat Completions（OpenAI 兼容）
+```
+POST https://api.moonshot.cn/v1/chat/completions
+Headers:
+  Authorization: Bearer {apiKey}
+  Content-Type: application/json
+Body:
+{
+  "model": "moonshot-v1-8k",
+  "messages": [
+    { "role": "system", "content": "..." },
+    { "role": "user", "content": "..." }
+  ],
+  "temperature": 0.7,
+  "max_tokens": 2048,
+  "response_format": { "type": "json_object" }
+}
+```
 
 #### OpenAI Chat Completions
 ```

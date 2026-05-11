@@ -25,6 +25,18 @@
 
 ### 2.1 获取 API Key
 
+#### DeepSeek（推荐国内用户）
+1. 访问 [DeepSeek 开放平台](https://platform.deepseek.com/)
+2. 注册/登录账号（支持国内手机号）
+3. 进入"API Keys"页面，点击"创建 API Key"
+4. 复制以 `sk-` 开头的 Key
+
+#### Kimi / Moonshot（推荐国内用户）
+1. 访问 [Moonshot AI 开放平台](https://platform.moonshot.cn/)
+2. 注册/登录账号（支持国内手机号）
+3. 进入"API Key 管理"，创建新 Key
+4. 复制 Key
+
 #### OpenAI
 1. 访问 [OpenAI Platform](https://platform.openai.com/)
 2. 注册/登录账号
@@ -51,11 +63,14 @@
 
 ### 2.3 费用说明
 
+- **DeepSeek-V3 (deepseek-chat)**：约 ¥0.001-0.002 / 次（极具性价比）
+- **DeepSeek-R1 (deepseek-reasoner)**：约 ¥0.002-0.004 / 次（带推理过程）
+- **Kimi (moonshot-v1-8k)**：约 ¥0.003-0.006 / 次
 - **GPT-4o Mini**：约 ¥0.001-0.003 / 次
 - **Claude 3 Haiku**：约 ¥0.001-0.002 / 次
 - **GPT-4o**：约 ¥0.02-0.05 / 次
 
-根据回答长度和模型不同，每次调用费用有所不同。建议先用低成本模型测试。
+**国内用户建议**：优先使用 DeepSeek 或 Kimi，无需特殊网络环境，价格更低，且对中文理解更好。根据回答长度和模型不同，每次调用费用有所不同。建议先用低成本模型测试。
 
 ---
 
@@ -95,10 +110,10 @@
 
 | 选项 | 说明 | 建议 |
 |------|------|------|
-| AI 提供商 | 选择使用哪家 AI 服务 | 根据您已有的账号选择 |
+| AI 提供商 | 选择使用哪家 AI 服务 | 国内用户推荐 DeepSeek 或 Kimi |
 | API Key | 您的 API 密钥 | 妥善保管，不要泄露 |
-| API Base URL | 自定义 API 地址 | 使用代理或第三方中转时填写 |
-| 模型 | AI 模型版本 | 日常用 GPT-4o Mini 足够 |
+| API Base URL | 自定义 API 地址 | 仅自定义 API 需要填写 |
+| 模型 | AI 模型版本 | 日常用 deepseek-chat 或 moonshot-v1-8k |
 | Temperature | 生成随机性 | 0.7 适合大多数场景 |
 | Max Tokens | 最大生成长度 | 2048 足够生成详细反驳 |
 

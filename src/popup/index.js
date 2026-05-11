@@ -42,7 +42,7 @@
 
   // 获取提供商显示名
   function getProviderName(provider) {
-    const names = { openai: 'OpenAI', anthropic: 'Claude', custom: '自定义' };
+    const names = { openai: 'OpenAI', anthropic: 'Claude', deepseek: 'DeepSeek', kimi: 'Kimi', custom: '自定义' };
     return names[provider] || provider;
   }
 

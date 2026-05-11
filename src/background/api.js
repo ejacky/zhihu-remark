@@ -1,6 +1,6 @@
 /**
  * 知乎反驳助手 - AI API 调用封装
- * 支持 OpenAI、Claude 等主流 API
+ * 支持 OpenAI、Claude、DeepSeek、Kimi 等主流 API
  */
 
 const API = {
@@ -12,7 +12,9 @@ const API = {
 
     switch (provider) {
       case 'openai':
-        return this._callOpenAI(content, config);
+      case 'deepseek':
+      case 'kimi':
+        return this._callOpenAICompatible(provider, content, config);
       case 'anthropic':
         return this._callAnthropic(content, config);
       case 'custom':
@@ -23,16 +25,18 @@ const API = {
   },
 
   /**
-   * 调用 OpenAI API
+   * 通用 OpenAI 兼容格式 API 调用
+   * 适用于 OpenAI、DeepSeek、Kimi、自定义 API
    */
-  async _callOpenAI(content, config) {
+  async _callOpenAICompatible(provider, content, config) {
     const apiKey = config.apiKey;
     if (!apiKey) {
-      throw new Error('请先在扩展设置中配置 OpenAI API Key');
+      const providerNames = { openai: 'OpenAI', deepseek: 'DeepSeek', kimi: 'Kimi', custom: '自定义' };
+      throw new Error(`请先在扩展设置中配置 ${providerNames[provider] || provider} API Key`);
     }
 
-    const apiBase = config.apiBase || CONSTANTS.PROVIDER_DEFAULTS.openai.apiBase;
-    const model = config.model || CONSTANTS.DEFAULT_CONFIG.model;
+    const apiBase = config.apiBase || CONSTANTS.PROVIDER_DEFAULTS[provider]?.apiBase || '';
+    const model = config.model || CONSTANTS.PROVIDER_DEFAULTS[provider]?.models?.[0] || CONSTANTS.DEFAULT_CONFIG.model;
     const temperature = config.temperature ?? CONSTANTS.DEFAULT_CONFIG.temperature;
     const maxTokens = config.maxTokens ?? CONSTANTS.DEFAULT_CONFIG.maxTokens;
 
@@ -50,22 +54,28 @@ const API = {
       ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
       : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
 
+    const requestBody = {
+      model,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      temperature,
+      max_tokens: maxTokens
+    };
+
+    // DeepSeek 和 Kimi 均支持 json_object 模式
+    if (provider !== 'custom') {
+      requestBody.response_format = { type: 'json_object' };
+    }
+
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
       },
-      body: JSON.stringify({
-        model,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
-        ],
-        temperature,
-        max_tokens: maxTokens,
-        response_format: { type: 'json_object' }
-      })
+      body: JSON.stringify(requestBody)
     });
 
     if (!response.ok) {
@@ -147,8 +157,7 @@ const API = {
     if (!config.apiBase) {
       throw new Error('自定义 API 需要配置 API Base URL');
     }
-    // 复用 OpenAI 逻辑，但使用自定义 base URL
-    return this._callOpenAI(content, { ...config, provider: 'openai' });
+    return this._callOpenAICompatible('custom', content, config);
   },
 
   /**

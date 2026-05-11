@@ -12,12 +12,12 @@ const CONSTANTS = {
 
   // 默认配置
   DEFAULT_CONFIG: {
-    // AI 提供商: 'openai' | 'anthropic' | 'custom'
+    // AI 提供商: 'openai' | 'anthropic' | 'deepseek' | 'kimi' | 'custom'
     provider: 'openai',
     // API 配置
     apiKey: '',
     apiBase: '', // 留空使用默认
-    model: 'gpt-4o-mini',
+    model: 'deepseek-chat',
     // 生成参数
     temperature: 0.7,
     maxTokens: 2048,
@@ -49,6 +49,14 @@ const CONSTANTS = {
     anthropic: {
       apiBase: 'https://api.anthropic.com/v1',
       models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307']
+    },
+    deepseek: {
+      apiBase: 'https://api.deepseek.com/v1',
+      models: ['deepseek-chat', 'deepseek-reasoner']
+    },
+    kimi: {
+      apiBase: 'https://api.moonshot.cn/v1',
+      models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k']
     },
     custom: {
       apiBase: '',
