@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>知乎反驳助手 - 设置</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="options-container">
+    <header class="options-header">
+      <h1>🛡️ 知乎反驳助手</h1>
+      <p>配置你的 AI 反驳助手</p>
+    </header>
+
+    <nav class="options-nav">
+      <button class="nav-btn active" data-tab="api">API 设置</button>
+      <button class="nav-btn" data-tab="style">风格与类型</button>
+      <button class="nav-btn" data-tab="features">功能开关</button>
+      <button class="nav-btn" data-tab="history">历史记录</button>
+      <button class="nav-btn" data-tab="prompt">Prompt 预览</button>
+    </nav>
+
+    <main class="options-content">
+      <!-- API 设置 -->
+      <section class="tab-panel active" id="tab-api">
+        <div class="panel-title">
+          <h2>API 配置</h2>
+          <p>选择 AI 提供商并配置 API Key</p>
+        </div>
+
+        <div class="form-group">
+          <label>AI 提供商</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="provider" value="openai" checked>
+              <span>OpenAI</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="provider" value="anthropic">
+              <span>Anthropic (Claude)</span>
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="provider" value="custom">
+              <span>自定义 API</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="apiKey">API Key</label>
+          <input type="password" id="apiKey" placeholder="sk-... 或 your-api-key">
+          <span class="form-hint">您的 API Key 仅存储在本地，不会上传到任何服务器</span>
+        </div>
+
+        <div class="form-group" id="apiBaseGroup" style="display: none;">
+          <label for="apiBase">API Base URL</label>
+          <input type="text" id="apiBase" placeholder="https://api.example.com/v1">
+          <span class="form-hint">自定义 API 的 Base URL，留空使用默认值</span>
+        </div>
+
+        <div class="form-group">
+          <label for="model">模型</label>
+          <select id="model">
+            <optgroup label="OpenAI">
+              <option value="gpt-4o">GPT-4o</option>
+              <option value="gpt-4o-mini" selected>GPT-4o Mini</option>
+              <option value="gpt-4-turbo">GPT-4 Turbo</option>
+              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
+            </optgroup>
+            <optgroup label="Claude">
+              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
+              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
+              <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="temperature">Temperature</label>
+            <input type="range" id="temperature" min="0" max="1" step="0.1" value="0.7">
+            <span class="range-value" id="temperatureValue">0.7</span>
+            <span class="form-hint">较低值生成更确定性内容，较高值更具创造性</span>
+          </div>
+          <div class="form-group">
+            <label for="maxTokens">Max Tokens</label>
+            <input type="number" id="maxTokens" value="2048" min="256" max="4096" step="256">
+            <span class="form-hint">生成内容的最大长度</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 风格与类型 -->
+      <section class="tab-panel" id="tab-style">
+        <div class="panel-title">
+          <h2>反驳风格</h2>
+          <p>选择生成反驳评论的语气风格</p>
+        </div>
+
+        <div class="style-cards">
+          <div class="style-card" data-style="gentle">
+            <div class="style-card__icon">🤝</div>
+            <div class="style-card__title">温和理性</div>
+            <div class="style-card__desc">语气平和，以理服人，适合一般讨论场景</div>
+          </div>
+          <div class="style-card" data-style="direct">
+            <div class="style-card__icon">⚡</div>
+            <div class="style-card__title">直接犀利</div>
+            <div class="style-card__desc">观点鲜明，直击要害，适合明显且恶劣的错误</div>
+          </div>
+          <div class="style-card" data-style="academic">
+            <div class="style-card__icon">📚</div>
+            <div class="style-card__title">学术严谨</div>
+            <div class="style-card__desc">引用规范，论证严密，适合学术和专业话题</div>
+          </div>
+        </div>
+
+        <div class="panel-title" style="margin-top: 32px;">
+          <h2>错误类型检测</h2>
+          <p>选择需要 AI 重点检测的错误类型</p>
+        </div>
+
+        <div class="checkbox-list">
+          <label class="checkbox-item">
+            <input type="checkbox" id="err-factError" checked>
+            <span class="checkbox-icon">❌</span>
+            <div class="checkbox-info">
+              <div class="checkbox-title">事实错误</div>
+              <div class="checkbox-desc">与公认事实、权威数据相悖的陈述</div>
+            </div>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="err-logicFallacy" checked>
+            <span class="checkbox-icon">🔄</span>
+            <div class="checkbox-info">
+              <div class="checkbox-title">逻辑谬误</div>
+              <div class="checkbox-desc">滑坡论证、诉诸情感、稻草人、虚假两难等</div>
+            </div>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="err-historicalNihilism" checked>
+            <span class="checkbox-icon">📜</span>
+            <div class="checkbox-info">
+              <div class="checkbox-title">历史虚无主义</div>
+              <div class="checkbox-desc">歪曲历史事实、解构主流历史叙事</div>
+            </div>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="err-dataFraud" checked>
+            <span class="checkbox-icon">📊</span>
+            <div class="checkbox-info">
+              <div class="checkbox-title">数据造假</div>
+              <div class="checkbox-desc">编造统计数据、选择性引用、断章取义</div>
+            </div>
+          </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="err-scienceError" checked>
+            <span class="checkbox-icon">🔬</span>
+            <div class="checkbox-info">
+              <div class="checkbox-title">科学错误</div>
+              <div class="checkbox-desc">违背基础科学原理或已被证伪的理论</div>
+            </div>
+          </label>
+        </div>
+      </section>
+
+      <!-- 功能开关 -->
+      <section class="tab-panel" id="tab-features">
+        <div class="panel-title">
+          <h2>功能设置</h2>
+          <p>自定义扩展的行为</p>
+        </div>
+
+        <div class="toggle-list">
+          <label class="toggle-item">
+            <div class="toggle-info">
+              <div class="toggle-title">显示错误分析</div>
+              <div class="toggle-desc">生成反驳前显示错误类型分析面板</div>
+            </div>
+            <input type="checkbox" id="feat-showAnalysis" class="toggle-switch" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="toggle-item">
+            <div class="toggle-info">
+              <div class="toggle-title">自动填充评论框</div>
+              <div class="toggle-desc">将生成的反驳自动填入知乎评论输入框</div>
+            </div>
+            <input type="checkbox" id="feat-autoFill" class="toggle-switch" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="toggle-item">
+            <div class="toggle-info">
+              <div class="toggle-title">要求标注来源</div>
+              <div class="toggle-desc">在 Prompt 中要求 AI 尽可能引用权威来源</div>
+            </div>
+            <input type="checkbox" id="feat-showSource" class="toggle-switch" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="toggle-item">
+            <div class="toggle-info">
+              <div class="toggle-title">启用历史记录</div>
+              <div class="toggle-desc">保存最近生成的反驳记录</div>
+            </div>
+            <input type="checkbox" id="feat-enableHistory" class="toggle-switch" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 历史记录 -->
+      <section class="tab-panel" id="tab-history">
+        <div class="panel-title">
+          <h2>生成历史</h2>
+          <p>查看最近生成的反驳记录</p>
+        </div>
+        <div class="history-toolbar">
+          <button class="btn btn--danger" id="btnClearHistory">清空历史</button>
+        </div>
+        <div class="history-list" id="historyList">
+          <div class="history-empty">暂无历史记录</div>
+        </div>
+      </section>
+
+      <!-- Prompt 预览 -->
+      <section class="tab-panel" id="tab-prompt">
+        <div class="panel-title">
+          <h2>System Prompt 预览</h2>
+          <p>当前使用的 AI 系统提示词</p>
+        </div>
+        <pre class="prompt-preview" id="promptPreview"></pre>
+        <div class="panel-title" style="margin-top: 24px;">
+          <h2>User Prompt 示例</h2>
+          <p>发送给 AI 的用户提示词结构</p>
+        </div>
+        <pre class="prompt-preview" id="promptUserPreview"></pre>
+      </section>
+    </main>
+
+    <footer class="options-footer">
+      <div class="save-status" id="saveStatus"></div>
+      <button class="btn btn--primary" id="btnSave">保存设置</button>
+    </footer>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>

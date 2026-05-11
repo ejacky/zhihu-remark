@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "知乎反驳助手",
+  "version": "1.0.0",
+  "description": "为知乎上的错误回答自动生成有理有据的反驳评论草稿",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.zhihu.com/*",
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/index.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.zhihu.com/question/*",
+        "https://www.zhihu.com/answer/*",
+        "https://zhuanlan.zhihu.com/p/*"
+      ],
+      "js": [
+        "src/shared/constants.js",
+        "src/shared/utils.js",
+        "src/shared/prompts.js",
+        "src/content/extractor.js",
+        "src/content/ui.js",
+        "src/content/injector.js",
+        "src/content/index.js"
+      ],
+      "css": [
+        "src/content/style.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_icon": {
+      "16": "assets/icon16.png",
+      "48": "assets/icon48.png",
+      "128": "assets/icon128.png"
+    }
+  },
+  "options_page": "src/options/index.html",
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  }
+}

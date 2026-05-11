@@ -1,0 +1,60 @@
+/**
+ * 知乎反驳助手 - 内容脚本样式
+ * 主要样式已内联在 index.js 中，此文件作为补充
+ */
+
+/* 知乎反驳助手相关元素的 z-index 管理 */
+.zhihu-remark-notification {
+  z-index: 2147483647;
+}
+
+.zhihu-remark-analysis-panel {
+  z-index: 2147483646;
+}
+
+.zhihu-remark-loading {
+  z-index: 2147483647;
+}
+
+/* 按钮在知乎深色模式下的适配 */
+html[data-theme="dark"] .zhihu-remark-btn--generate {
+  background: #1a3a5c;
+  color: #58a6ff;
+  border-color: #1f6feb;
+}
+
+html[data-theme="dark"] .zhihu-remark-btn--generate:hover {
+  background: #1f6feb;
+  color: #fff;
+}
+
+/* 确保按钮不会被知乎样式覆盖 */
+.zhihu-remark-btn--generate {
+  all: initial;
+  display: inline-flex !important;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  margin-left: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #056de8;
+  background: #e6f0fd;
+  border: 1px solid #bbd6f7;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.zhihu-remark-btn--generate:hover {
+  background: #056de8;
+  color: #fff;
+  border-color: #056de8;
+}
+
+.zhihu-remark-btn--generate:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
