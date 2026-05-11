@@ -20,7 +20,7 @@ const CONSTANTS = {
     model: 'deepseek-v4-pro',
     // 生成参数
     temperature: 0.7,
-    maxTokens: 2048,
+    maxTokens: 3072,
     // 反驳风格: 'gentle' | 'direct' | 'academic'
     style: 'gentle',
     // 错误类型开关

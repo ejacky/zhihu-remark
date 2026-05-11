@@ -60,7 +60,9 @@ ${showSource ? '- 尽可能引用权威来源（如"根据《史记》记载"、
 注意：
 - confidence 只能是 "high"（确信）| "medium"（较有把握）| "low"（存疑，建议用户谨慎）
 - 如果内容没有明显错误，hasErrors 设为 false，rebuttal 为空字符串
-- rebuttal 长度控制在 100-800 字之间，适合知乎评论区`;
+- rebuttal 长度控制在 100-500 字之间，必须简洁有力，优先保证 JSON 结构完整不被截断
+- errors 数组中的 explanation 字段也请精简，不要过度展开
+- 绝对不要在 rebuttal 或 explanation 中重复引用大段原文，用提炼后的语言说明即可`;
   },
 
   /**

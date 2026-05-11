@@ -46,7 +46,7 @@
     renderModelSelect(config.provider, config.model);
     document.getElementById('temperature').value = config.temperature ?? 0.7;
     document.getElementById('temperatureValue').textContent = config.temperature ?? 0.7;
-    document.getElementById('maxTokens').value = config.maxTokens || 2048;
+    document.getElementById('maxTokens').value = config.maxTokens || 3072;
 
     // 显示/隐藏 apiBase（仅自定义 API 显示）
     const needsCustomBase = config.provider === 'custom';

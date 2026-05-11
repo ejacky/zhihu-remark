@@ -109,16 +109,53 @@ const Utils = {
   },
 
   /**
-   * 从文本中提取JSON代码块
+   * 从文本中提取JSON代码块（支持被截断的不完整JSON）
    */
   extractJSON(text) {
-    // 尝试匹配 ```json ... ``` 代码块
+    if (!text) return null;
+
+    // 方案1：匹配 ```json ... ``` 代码块
     const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     if (codeBlockMatch) {
-      return this.safeJSONParse(codeBlockMatch[1].trim());
+      const parsed = this.safeJSONParse(codeBlockMatch[1].trim());
+      if (parsed) return parsed;
     }
-    // 尝试直接解析整个文本
-    return this.safeJSONParse(text.trim());
+
+    // 方案2：找文本中第一个 { 到最后一个 } 之间的内容
+    const firstBrace = text.indexOf('{');
+    const lastBrace = text.lastIndexOf('}');
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const parsed = this.safeJSONParse(text.slice(firstBrace, lastBrace + 1));
+      if (parsed) return parsed;
+    }
+
+    // 方案3：JSON 被 max_tokens 截断，尝试补全缺失的闭合括号
+    if (firstBrace !== -1) {
+      let jsonStr = text.slice(firstBrace).trim();
+
+      // 如果最后一个值是未闭合的字符串，补全引号
+      if (jsonStr.match(/:\s*"[^"]*$/)) {
+        jsonStr += '"';
+      }
+
+      // 补全缺失的 } 和 ]
+      const openBraces = (jsonStr.match(/\{/g) || []).length;
+      const closeBraces = (jsonStr.match(/\}/g) || []).length;
+      const openBrackets = (jsonStr.match(/\[/g) || []).length;
+      const closeBrackets = (jsonStr.match(/\]/g) || []).length;
+
+      for (let i = 0; i < openBrackets - closeBrackets; i++) {
+        jsonStr += ']';
+      }
+      for (let i = 0; i < openBraces - closeBraces; i++) {
+        jsonStr += '}';
+      }
+
+      const parsed = this.safeJSONParse(jsonStr);
+      if (parsed) return parsed;
+    }
+
+    return null;
   },
 
   /**

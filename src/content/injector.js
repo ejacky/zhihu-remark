@@ -216,10 +216,10 @@ const Injector = {
       onRegenerate: (style) => {
         generateForStyle(style, true);
       },
-      onUse: (style) => {
+      onUse: async (style) => {
         const result = styleResults[style];
         if (result && result.rebuttal) {
-          this._fillCommentBox(answerElement, result.rebuttal);
+          await this._fillCommentBox(answerElement, result.rebuttal);
           UI.showSuccess('反驳内容已填入评论框，请审核后发布');
         }
       },
@@ -268,7 +268,7 @@ const Injector = {
   /**
    * 将反驳内容填入评论框
    */
-  _fillCommentBox(answerElement, text) {
+  async _fillCommentBox(answerElement, text) {
     // 先尝试展开评论区域
     const commentBtn = answerElement.querySelector('button[aria-label*="评论"], .ContentItem-action button[data-za-detail-view-id*="comment"]');
     if (commentBtn) {
@@ -276,21 +276,24 @@ const Injector = {
     }
 
     // 等待评论框出现
-    setTimeout(() => {
-      this._tryFillCommentInput(answerElement, text);
-    }, 800);
+    await new Promise(resolve => setTimeout(resolve, 800));
+
+    const success = await this._tryFillCommentInput(answerElement, text);
+    if (!success) {
+      await Utils.copyToClipboard(text);
+      UI.showWarning('未能自动填充评论框，反驳内容已复制到剪贴板，请手动粘贴');
+    }
   },
 
   /**
    * 尝试填充评论输入框
-   * 核心目标：让 React 受控组件正确感知内容变化，使发布按钮可用
+   * 核心目标：让编辑器正确感知内容变化，使发布按钮可用
    */
-  _tryFillCommentInput(answerElement, text) {
+  async _tryFillCommentInput(answerElement, text) {
     // ===== 策略1：新版知乎富文本编辑器 =====
     const editableDiv = answerElement.querySelector('.Editable-div[contenteditable="true"], .RichContent-editor .Editable-div, [contenteditable="true"]');
     if (editableDiv) {
-      this._fillContentEditable(editableDiv, text);
-      return true;
+      return await this._fillContentEditable(editableDiv, text);
     }
 
     // ===== 策略2：textarea =====
@@ -303,41 +306,49 @@ const Injector = {
     // ===== 策略3：全局搜索评论框 =====
     const globalEditable = document.querySelector('.Comments-container [contenteditable="true"], .Modal-wrapper [contenteditable="true"]');
     if (globalEditable) {
-      this._fillContentEditable(globalEditable, text);
-      return true;
+      return await this._fillContentEditable(globalEditable, text);
     }
-
-    // 如果都失败了，显示提示让用户手动粘贴
-    Utils.copyToClipboard(text).then(() => {
-      UI.showWarning('未能自动填充评论框，反驳内容已复制到剪贴板，请手动粘贴');
-    });
 
     return false;
   },
 
   /**
-   * 填充 contenteditable 编辑器（触发完整原生事件链）
+   * 填充 contenteditable 编辑器
+   * 核心方案：直接创建 ClipboardEvent('paste') 并携带 DataTransfer 数据
+   * 让编辑器（Slate.js/Draft.js）走自己的原生 paste handler
    */
-  _fillContentEditable(element, text) {
+  async _fillContentEditable(element, text) {
     element.focus();
 
-    // Step 1: 清空现有内容并创建选区
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(element);
-    range.deleteContents();
-    selection.removeAllRanges();
-    selection.addRange(range);
-
-    // Step 2: 使用 execCommand 插入文本，触发浏览器原生事件序列
-    // execCommand 会触发 beforeinput → input → 内部状态更新
-    const success = document.execCommand('insertText', false, text);
-
-    if (!success) {
-      // Fallback：直接设置 + 模拟 paste 事件
-      element.innerHTML = this._escapeHtml(text).replace(/\n/g, '<br>');
-      this._simulatePaste(element, text);
+    // Step 1: 尝试写入系统剪贴板（作为辅助，真实手动粘贴时可用）
+    try {
+      await navigator.clipboard.writeText(text);
+    } catch (e) {
+      // 忽略权限错误，核心逻辑不依赖系统剪贴板
     }
+
+    // Step 2: 创建带数据的 paste 事件
+    const dt = new DataTransfer();
+    dt.setData('text/plain', text);
+    dt.setData('text/html', this._escapeHtml(text).replace(/\n/g, '<br>'));
+
+    const pasteEvent = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: dt,
+    });
+
+    element.dispatchEvent(pasteEvent);
+
+    // Step 3: 检查编辑器是否处理了 paste
+    // Slate.js 等编辑器会在 onPaste 中调用 event.preventDefault()
+    if (!pasteEvent.defaultPrevented) {
+      // 编辑器没拦截 paste，不设置 innerHTML（避免僵尸内容）
+      // 直接返回失败，外层 fallback 到剪贴板复制 + 提示手动粘贴
+      return false;
+    }
+
+    return true;
   },
 
   /**
@@ -362,7 +373,7 @@ const Injector = {
   },
 
   /**
-   * 模拟 paste 事件（execCommand 失败时的 fallback）
+   * 模拟 paste 事件（fallback）
    */
   _simulatePaste(element, text) {
     try {
