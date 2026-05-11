@@ -71,32 +71,30 @@ const UI = {
   },
 
   /**
-   * 创建浮动分析面板
-   * @param {Object} analysisData - 分析数据
-   * @param {Function} onUse - 点击"使用此反驳"回调
-   * @param {Function} onDismiss - 点击关闭回调
-   * @param {Function} [onRegenerate] - 点击"重新生成"回调
-   * @param {string} [rebuttal] - 生成的反驳内容预览
+   * 创建浮动分析面板（状态驱动，支持多风格切换）
+   * @param {Object} options - 配置选项
+   * @param {Object} options.styleResults - 各风格生成结果缓存 { gentle: {...}, direct: null, ... }
+   * @param {string} options.currentStyle - 当前选中的风格 key
+   * @param {Function} options.onStyleChange - 切换风格回调 (style) => {}
+   * @param {Function} options.onRegenerate - 重新生成回调 (style) => {}
+   * @param {Function} options.onUse - 使用此反驳回调 (style) => {}
+   * @param {Function} options.onDismiss - 关闭面板回调
+   * @returns {Object} { element, update, remove }
    */
-  createAnalysisPanel(analysisData, onUse, onDismiss, onRegenerate, rebuttal) {
-    const { hasErrors, errorTypes, summary } = analysisData;
-
+  createAnalysisPanel({ styleResults, currentStyle, onStyleChange, onRegenerate, onUse, onDismiss }) {
     const panel = Utils.createElement('div', {
       className: 'zhihu-remark-analysis-panel'
     });
 
-    // 标题
+    // ===== 标题栏 =====
     const header = Utils.createElement('div', {
       className: 'zhihu-remark-analysis-panel__header'
     });
-
     const title = Utils.createElement('h3', {
       className: 'zhihu-remark-analysis-panel__title',
-      textContent: hasErrors ? '🔍 错误分析' : '✅ 未检测到明显错误'
+      textContent: '🔍 错误分析'
     });
     header.appendChild(title);
-
-    // 关闭按钮
     const closeBtn = Utils.createElement('button', {
       className: 'zhihu-remark-analysis-panel__close',
       textContent: '✕',
@@ -108,96 +106,179 @@ const UI = {
     header.appendChild(closeBtn);
     panel.appendChild(header);
 
-    if (hasErrors) {
-      // 错误类型标签
-      const tagsContainer = Utils.createElement('div', {
-        className: 'zhihu-remark-analysis-panel__tags'
-      });
-
-      errorTypes.forEach(typeKey => {
-        const typeInfo = CONSTANTS.ERROR_TYPES[typeKey];
-        if (typeInfo) {
-          const tag = Utils.createElement('span', {
-            className: `zhihu-remark-tag zhihu-remark-tag--${typeKey}`,
-            textContent: `${typeInfo.icon} ${typeInfo.label}`
-          });
-          tagsContainer.appendChild(tag);
+    // ===== 风格选项卡 =====
+    const tabsContainer = Utils.createElement('div', {
+      className: 'zhihu-remark-style-tabs'
+    });
+    const tabElements = {};
+    Object.keys(CONSTANTS.REBUTTAL_STYLES).forEach(styleKey => {
+      const styleInfo = CONSTANTS.REBUTTAL_STYLES[styleKey];
+      const tab = Utils.createElement('button', {
+        className: 'zhihu-remark-style-tab',
+        textContent: styleInfo.name,
+        onClick: () => {
+          if (tab.disabled) return;
+          if (onStyleChange) onStyleChange(styleKey);
         }
       });
-      panel.appendChild(tagsContainer);
+      tabElements[styleKey] = tab;
+      tabsContainer.appendChild(tab);
+    });
+    panel.appendChild(tabsContainer);
 
-      // 摘要
-      const summaryEl = Utils.createElement('div', {
-        className: 'zhihu-remark-analysis-panel__summary',
-        textContent: summary
+    // ===== 内容区域（动态更新）=====
+    const contentArea = Utils.createElement('div', {
+      className: 'zhihu-remark-analysis-panel__content'
+    });
+    panel.appendChild(contentArea);
+
+    // ===== 操作按钮区域（动态更新）=====
+    const actionsArea = Utils.createElement('div', {
+      className: 'zhihu-remark-analysis-panel__actions'
+    });
+    panel.appendChild(actionsArea);
+
+    document.body.appendChild(panel);
+
+    // 动画进入
+    requestAnimationFrame(() => {
+      panel.classList.add('zhihu-remark-analysis-panel--visible');
+    });
+
+    // ---- 渲染/更新内容的方法 ----
+    function renderContent() {
+      const result = styleResults[currentStyle];
+
+      // 更新选项卡样式
+      Object.keys(tabElements).forEach(key => {
+        const tab = tabElements[key];
+        const isActive = key === currentStyle;
+        const isLoading = styleResults[key]?.loading;
+        tab.className = 'zhihu-remark-style-tab' +
+          (isActive ? ' zhihu-remark-style-tab--active' : '') +
+          (isLoading ? ' zhihu-remark-style-tab--loading' : '');
+        tab.disabled = isLoading;
       });
-      panel.appendChild(summaryEl);
 
-      // 生成的反驳内容预览
-      if (rebuttal) {
-        const rebuttalSection = Utils.createElement('div', {
-          className: 'zhihu-remark-analysis-panel__rebuttal-section'
+      // 清空内容区
+      contentArea.innerHTML = '';
+      actionsArea.innerHTML = '';
+
+      // 无数据 / 加载中 / 错误 / 有数据
+      if (!result || result.loading) {
+        // 加载中
+        const loadingText = Utils.createElement('div', {
+          className: 'zhihu-remark-panel__loading-text',
+          textContent: `正在生成 ${CONSTANTS.REBUTTAL_STYLES[currentStyle]?.name || ''}风格的反驳...`
         });
-
-        const rebuttalLabel = Utils.createElement('div', {
-          className: 'zhihu-remark-analysis-panel__rebuttal-label',
-          textContent: '📝 生成的反驳'
+        contentArea.appendChild(loadingText);
+      } else if (result.error) {
+        // 生成失败
+        const errorBox = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__no-error',
+          textContent: `生成失败：${result.error}`
         });
-        rebuttalSection.appendChild(rebuttalLabel);
+        contentArea.appendChild(errorBox);
 
-        const rebuttalContent = Utils.createElement('div', {
-          className: 'zhihu-remark-analysis-panel__rebuttal-content',
-          textContent: rebuttal
+        // 重试按钮
+        const retryBtn = Utils.createElement('button', {
+          className: 'zhihu-remark-btn zhihu-remark-btn--secondary',
+          textContent: '🔄 重试',
+          onClick: () => {
+            if (onRegenerate) onRegenerate(currentStyle);
+          }
         });
-        rebuttalSection.appendChild(rebuttalContent);
-        panel.appendChild(rebuttalSection);
-      }
+        actionsArea.appendChild(retryBtn);
+      } else if (!result.analysis?.hasErrors) {
+        // 未检测到错误
+        const noErrorTip = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__no-error',
+          textContent: 'AI 未在该回答中发现明显的事实错误或逻辑谬误。'
+        });
+        contentArea.appendChild(noErrorTip);
+      } else {
+        // 有数据：显示错误标签、摘要、反驳预览
+        const { analysis, rebuttal } = result;
 
-      // 操作按钮
-      const actions = Utils.createElement('div', {
-        className: 'zhihu-remark-analysis-panel__actions'
-      });
+        // 错误类型标签
+        const tagsContainer = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__tags'
+        });
+        (analysis.errorTypes || []).forEach(typeKey => {
+          const typeInfo = CONSTANTS.ERROR_TYPES[typeKey];
+          if (typeInfo) {
+            const tag = Utils.createElement('span', {
+              className: `zhihu-remark-tag zhihu-remark-tag--${typeKey}`,
+              textContent: `${typeInfo.icon} ${typeInfo.label}`
+            });
+            tagsContainer.appendChild(tag);
+          }
+        });
+        contentArea.appendChild(tagsContainer);
 
-      if (onRegenerate) {
+        // 摘要
+        const summaryEl = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__summary',
+          textContent: analysis.summary || ''
+        });
+        contentArea.appendChild(summaryEl);
+
+        // 反驳内容预览
+        if (rebuttal) {
+          const rebuttalSection = Utils.createElement('div', {
+            className: 'zhihu-remark-analysis-panel__rebuttal-section'
+          });
+          const rebuttalLabel = Utils.createElement('div', {
+            className: 'zhihu-remark-analysis-panel__rebuttal-label',
+            textContent: '📝 生成的反驳'
+          });
+          rebuttalSection.appendChild(rebuttalLabel);
+          const rebuttalContent = Utils.createElement('div', {
+            className: 'zhihu-remark-analysis-panel__rebuttal-content',
+            textContent: rebuttal
+          });
+          rebuttalSection.appendChild(rebuttalContent);
+          contentArea.appendChild(rebuttalSection);
+        }
+
+        // 操作按钮
         const regenerateBtn = Utils.createElement('button', {
           className: 'zhihu-remark-btn zhihu-remark-btn--secondary',
           textContent: '🔄 重新生成',
           onClick: () => {
             regenerateBtn.disabled = true;
             regenerateBtn.textContent = '生成中...';
-            if (onRegenerate) onRegenerate(panel, regenerateBtn);
+            if (onRegenerate) onRegenerate(currentStyle);
           }
         });
-        actions.appendChild(regenerateBtn);
-      }
+        actionsArea.appendChild(regenerateBtn);
 
-      const useBtn = Utils.createElement('button', {
-        className: 'zhihu-remark-btn zhihu-remark-btn--primary',
-        textContent: '使用此反驳',
-        onClick: () => {
-          if (onUse) onUse();
-          this._removePanel(panel);
-        }
-      });
-      actions.appendChild(useBtn);
-      panel.appendChild(actions);
-    } else {
-      // 无错误时的提示
-      const noErrorTip = Utils.createElement('div', {
-        className: 'zhihu-remark-analysis-panel__no-error',
-        textContent: 'AI 未在该回答中发现明显的事实错误或逻辑谬误。如果您认为有误，可以尝试手动触发分析。'
-      });
-      panel.appendChild(noErrorTip);
+        const useBtn = Utils.createElement('button', {
+          className: 'zhihu-remark-btn zhihu-remark-btn--primary',
+          textContent: '使用此反驳',
+          onClick: () => {
+            if (onUse) onUse(currentStyle);
+            UI._removePanel(panel);
+          }
+        });
+        actionsArea.appendChild(useBtn);
+      }
     }
 
-    document.body.appendChild(panel);
+    // 初始渲染
+    renderContent();
 
-    // 动画
-    requestAnimationFrame(() => {
-      panel.classList.add('zhihu-remark-analysis-panel--visible');
-    });
-
-    return panel;
+    return {
+      element: panel,
+      update(newState) {
+        if (newState.currentStyle !== undefined) currentStyle = newState.currentStyle;
+        if (newState.styleResults !== undefined) Object.assign(styleResults, newState.styleResults);
+        renderContent();
+      },
+      remove() {
+        UI._removePanel(panel);
+      }
+    };
   },
 
   /**

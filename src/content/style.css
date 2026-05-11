@@ -83,6 +83,47 @@ html[data-theme="dark"] .zhihu-remark-btn--generate:hover {
   word-break: break-word;
 }
 
+/* 分析面板风格选项卡 */
+.zhihu-remark-style-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.zhihu-remark-style-tab {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  background: #f0f0f0;
+  color: #595959;
+  transition: all 0.2s;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+.zhihu-remark-style-tab:hover {
+  background: #e6f0fd;
+  color: #056de8;
+}
+.zhihu-remark-style-tab--active {
+  background: #056de8;
+  color: #fff;
+}
+.zhihu-remark-style-tab--active:hover {
+  background: #0461d1;
+  color: #fff;
+}
+.zhihu-remark-style-tab--loading {
+  opacity: 0.6;
+  cursor: wait;
+}
+.zhihu-remark-panel__loading-text {
+  padding: 40px 20px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
 /* 分析面板按钮 */
 .zhihu-remark-analysis-panel__actions {
   display: flex;

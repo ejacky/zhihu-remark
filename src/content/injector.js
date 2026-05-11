@@ -102,7 +102,50 @@ const Injector = {
         throw new Error('未能提取到有效的回答内容，请尝试刷新页面');
       }
 
-      await this._doGenerate(content, answerElement, button, originalText);
+      // 获取当前配置的风格
+      const configResponse = await this._sendMessage({ type: CONSTANTS.MESSAGE_TYPES.GET_CONFIG });
+      const defaultStyle = configResponse.success ? configResponse.data.style : 'gentle';
+
+      // 初始化多风格缓存
+      const styleResults = {
+        [defaultStyle]: null
+      };
+      let currentStyle = defaultStyle;
+
+      // 首次生成
+      const loading = UI.createLoading('正在分析回答内容...');
+      try {
+        loading.updateText('正在调用 AI 分析...');
+        const response = await this._sendGenerateMessage(content, defaultStyle);
+
+        if (!response.success) {
+          throw new Error(response.error || '生成失败');
+        }
+
+        styleResults[defaultStyle] = {
+          analysis: response.data.analysis,
+          rebuttal: response.data.rebuttal,
+          loading: false,
+          error: null
+        };
+
+        if (!response.data.analysis.hasErrors) {
+          UI.showWarning('未检测到明显错误，未生成反驳内容');
+        }
+      } catch (error) {
+        styleResults[defaultStyle] = {
+          analysis: null,
+          rebuttal: '',
+          loading: false,
+          error: error.message || '生成失败'
+        };
+        UI.showError(error.message || '生成失败，请检查配置后重试');
+      } finally {
+        loading.remove();
+      }
+
+      // 打开面板
+      this._openAnalysisPanel(content, answerElement, styleResults, currentStyle);
 
     } catch (error) {
       console.error('[知乎反驳助手]', error);
@@ -114,76 +157,105 @@ const Injector = {
   },
 
   /**
-   * 执行生成反驳的核心逻辑（支持首次生成和重新生成）
+   * 打开/管理分析面板（支持多风格切换）
    */
-  async _doGenerate(content, answerElement, triggerButton, triggerOriginalText, options = {}) {
-    const { regenerate, existingPanel, regenerateBtn } = options;
-    const loading = UI.createLoading(regenerate ? '正在重新生成...' : '正在分析回答内容...');
+  _openAnalysisPanel(content, answerElement, styleResults, currentStyle) {
+    let panelCtrl = null;
 
-    try {
-      loading.updateText('正在调用 AI 分析...');
+    const refreshPanel = () => {
+      if (panelCtrl) {
+        panelCtrl.update({ styleResults, currentStyle });
+      }
+    };
 
-      const regenerateHint = regenerate
-        ? '（这是重新生成请求。请换一个角度、换一种表达方式重新生成反驳内容，避免与之前的版本雷同。）'
-        : undefined;
+    const generateForStyle = async (style, isRegenerate) => {
+      // 标记该风格为加载中
+      styleResults[style] = { analysis: null, rebuttal: '', loading: true, error: null };
+      refreshPanel();
 
-      // 发送消息给 background 生成反驳
-      const response = await this._sendGenerateMessage(content, regenerateHint);
+      try {
+        const regenerateHint = isRegenerate
+          ? '（这是重新生成请求。请换一个角度、换一种表达方式重新生成反驳内容，避免与之前的版本雷同。）'
+          : undefined;
+        const response = await this._sendGenerateMessage(content, style, regenerateHint);
 
-      if (!response.success) {
-        throw new Error(response.error || '生成失败');
+        if (!response.success) {
+          throw new Error(response.error || '生成失败');
+        }
+
+        styleResults[style] = {
+          analysis: response.data.analysis,
+          rebuttal: response.data.rebuttal,
+          loading: false,
+          error: null
+        };
+      } catch (error) {
+        styleResults[style] = {
+          analysis: null,
+          rebuttal: '',
+          loading: false,
+          error: error.message || '生成失败'
+        };
       }
 
-      const result = response.data;
+      refreshPanel();
+    };
 
-      // 移除旧面板（如果是重新生成）
-      if (existingPanel) {
-        UI._removePanel(existingPanel);
+    panelCtrl = UI.createAnalysisPanel({
+      styleResults,
+      currentStyle,
+      onStyleChange: (style) => {
+        currentStyle = style;
+        if (!styleResults[style]) {
+          // 未生成过，自动触发
+          generateForStyle(style);
+        } else {
+          refreshPanel();
+        }
+      },
+      onRegenerate: (style) => {
+        generateForStyle(style, true);
+      },
+      onUse: (style) => {
+        const result = styleResults[style];
+        if (result && result.rebuttal) {
+          this._fillCommentBox(answerElement, result.rebuttal);
+          UI.showSuccess('反驳内容已填入评论框，请审核后发布');
+        }
+      },
+      onDismiss: () => {
+        panelCtrl = null;
       }
-
-      // 显示分析面板（传入反驳内容供预览）
-      UI.createAnalysisPanel(result.analysis, () => {
-        // 用户点击"使用此反驳"
-        this._fillCommentBox(answerElement, result.rebuttal);
-        UI.showSuccess('反驳内容已填入评论框，请审核后发布');
-      }, () => {
-        // 用户关闭面板
-      }, () => {
-        // 用户点击"重新生成"
-        this._doGenerate(content, answerElement, triggerButton, triggerOriginalText, {
-          regenerate: true
-        });
-      }, result.rebuttal);
-
-      // 如果开启了自动填充且没有错误分析面板（无错误时）
-      if (!result.analysis.hasErrors) {
-        UI.showWarning('未检测到明显错误，未生成反驳内容');
-      }
-
-    } catch (error) {
-      console.error('[知乎反驳助手]', error);
-      UI.showError(error.message || '生成失败，请检查配置后重试');
-      // 恢复重新生成按钮状态
-      if (regenerateBtn) {
-        regenerateBtn.disabled = false;
-        regenerateBtn.textContent = '🔄 重新生成';
-      }
-    } finally {
-      loading.remove();
-    }
+    });
   },
 
   /**
    * 发送生成消息到 background
    * @param {Object} content - 回答内容
+   * @param {string} [style] - 临时指定的风格
    * @param {string} [regenerateHint] - 重新生成提示
    */
-  _sendGenerateMessage(content, regenerateHint) {
+  _sendGenerateMessage(content, style, regenerateHint) {
     return new Promise((resolve, reject) => {
       chrome.runtime.sendMessage({
         type: CONSTANTS.MESSAGE_TYPES.GENERATE_REBUTTAL,
-        data: { content, regenerateHint }
+        data: { content, style, regenerateHint }
       }, (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response || { success: false, error: '无响应' });
+        }
+      });
+    });
+  },
+
+  /**
+   * 通用消息发送
+   */
+  _sendMessage(message) {
+    return new Promise((resolve, reject) => {
+      chrome.runtime.sendMessage(message, (response) => {
         if (chrome.runtime.lastError) {
           reject(new Error(chrome.runtime.lastError.message));
         } else {

@@ -77,10 +77,15 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleGenerateRebuttal(data, sender) {
   try {
-    const { content, regenerateHint } = data;
+    const { content, regenerateHint, style } = data;
 
     // 获取配置
     const config = await Storage.getConfig();
+
+    // 支持面板内临时切换风格（不持久化）
+    if (style) {
+      config.style = style;
+    }
 
     // 检查 API Key
     if (!config.apiKey) {
