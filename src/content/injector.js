@@ -283,45 +283,27 @@ const Injector = {
 
   /**
    * 尝试填充评论输入框
+   * 核心目标：让 React 受控组件正确感知内容变化，使发布按钮可用
    */
   _tryFillCommentInput(answerElement, text) {
-    // 策略1：新版知乎富文本编辑器
+    // ===== 策略1：新版知乎富文本编辑器 =====
     const editableDiv = answerElement.querySelector('.Editable-div[contenteditable="true"], .RichContent-editor .Editable-div, [contenteditable="true"]');
     if (editableDiv) {
-      // 设置内容
-      editableDiv.focus();
-      editableDiv.innerHTML = this._escapeHtml(text).replace(/\n/g, '<br>');
-
-      // 触发输入事件
-      const inputEvent = new InputEvent('input', { bubbles: true });
-      editableDiv.dispatchEvent(inputEvent);
-
-      // 触发知乎内部的事件监听
-      const changeEvent = new Event('change', { bubbles: true });
-      editableDiv.dispatchEvent(changeEvent);
-
+      this._fillContentEditable(editableDiv, text);
       return true;
     }
 
-    // 策略2：textarea
+    // ===== 策略2：textarea =====
     const textarea = answerElement.querySelector('textarea[placeholder*="评论"], textarea[placeholder*="写下你的评论"], .CommentEditorV2-textarea');
     if (textarea) {
-      textarea.value = text;
-      textarea.focus();
-
-      // 触发事件
-      textarea.dispatchEvent(new InputEvent('input', { bubbles: true }));
-      textarea.dispatchEvent(new Event('change', { bubbles: true }));
-
+      this._fillTextarea(textarea, text);
       return true;
     }
 
-    // 策略3：全局搜索评论框
+    // ===== 策略3：全局搜索评论框 =====
     const globalEditable = document.querySelector('.Comments-container [contenteditable="true"], .Modal-wrapper [contenteditable="true"]');
     if (globalEditable) {
-      globalEditable.focus();
-      globalEditable.innerHTML = this._escapeHtml(text).replace(/\n/g, '<br>');
-      globalEditable.dispatchEvent(new InputEvent('input', { bubbles: true }));
+      this._fillContentEditable(globalEditable, text);
       return true;
     }
 
@@ -331,6 +313,76 @@ const Injector = {
     });
 
     return false;
+  },
+
+  /**
+   * 填充 contenteditable 编辑器（触发完整原生事件链）
+   */
+  _fillContentEditable(element, text) {
+    element.focus();
+
+    // Step 1: 清空现有内容并创建选区
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(element);
+    range.deleteContents();
+    selection.removeAllRanges();
+    selection.addRange(range);
+
+    // Step 2: 使用 execCommand 插入文本，触发浏览器原生事件序列
+    // execCommand 会触发 beforeinput → input → 内部状态更新
+    const success = document.execCommand('insertText', false, text);
+
+    if (!success) {
+      // Fallback：直接设置 + 模拟 paste 事件
+      element.innerHTML = this._escapeHtml(text).replace(/\n/g, '<br>');
+      this._simulatePaste(element, text);
+    }
+  },
+
+  /**
+   * 填充 textarea（绕过 React setter 劫持）
+   */
+  _fillTextarea(textarea, text) {
+    textarea.focus();
+
+    // 使用原生 property setter 绕过 React 受控组件封装
+    const valueDescriptor = Object.getOwnPropertyDescriptor(
+      window.HTMLTextAreaElement.prototype, 'value'
+    );
+    if (valueDescriptor && valueDescriptor.set) {
+      valueDescriptor.set.call(textarea, text);
+    } else {
+      textarea.value = text;
+    }
+
+    // 触发完整事件序列，让 React 感知变化
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    textarea.dispatchEvent(new Event('change', { bubbles: true }));
+  },
+
+  /**
+   * 模拟 paste 事件（execCommand 失败时的 fallback）
+   */
+  _simulatePaste(element, text) {
+    try {
+      const html = this._escapeHtml(text).replace(/\n/g, '<br>');
+      const dt = new DataTransfer();
+      dt.setData('text/plain', text);
+      dt.setData('text/html', html);
+
+      element.dispatchEvent(new ClipboardEvent('paste', {
+        bubbles: true,
+        cancelable: true,
+        clipboardData: dt
+      }));
+    } catch (e) {
+      // 最小 fallback：触发 input 事件
+      element.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        inputType: 'insertText'
+      }));
+    }
   },
 
   /**
