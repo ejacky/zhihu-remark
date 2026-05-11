@@ -72,8 +72,13 @@ const UI = {
 
   /**
    * 创建浮动分析面板
+   * @param {Object} analysisData - 分析数据
+   * @param {Function} onUse - 点击"使用此反驳"回调
+   * @param {Function} onDismiss - 点击关闭回调
+   * @param {Function} [onRegenerate] - 点击"重新生成"回调
+   * @param {string} [rebuttal] - 生成的反驳内容预览
    */
-  createAnalysisPanel(analysisData, onUse, onDismiss) {
+  createAnalysisPanel(analysisData, onUse, onDismiss, onRegenerate, rebuttal) {
     const { hasErrors, errorTypes, summary } = analysisData;
 
     const panel = Utils.createElement('div', {
@@ -128,10 +133,43 @@ const UI = {
       });
       panel.appendChild(summaryEl);
 
+      // 生成的反驳内容预览
+      if (rebuttal) {
+        const rebuttalSection = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__rebuttal-section'
+        });
+
+        const rebuttalLabel = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__rebuttal-label',
+          textContent: '📝 生成的反驳'
+        });
+        rebuttalSection.appendChild(rebuttalLabel);
+
+        const rebuttalContent = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__rebuttal-content',
+          textContent: rebuttal
+        });
+        rebuttalSection.appendChild(rebuttalContent);
+        panel.appendChild(rebuttalSection);
+      }
+
       // 操作按钮
       const actions = Utils.createElement('div', {
         className: 'zhihu-remark-analysis-panel__actions'
       });
+
+      if (onRegenerate) {
+        const regenerateBtn = Utils.createElement('button', {
+          className: 'zhihu-remark-btn zhihu-remark-btn--secondary',
+          textContent: '🔄 重新生成',
+          onClick: () => {
+            regenerateBtn.disabled = true;
+            regenerateBtn.textContent = '生成中...';
+            if (onRegenerate) onRegenerate(panel, regenerateBtn);
+          }
+        });
+        actions.appendChild(regenerateBtn);
+      }
 
       const useBtn = Utils.createElement('button', {
         className: 'zhihu-remark-btn zhihu-remark-btn--primary',

@@ -183,7 +183,7 @@ Content Script ↔ Service Worker 通信：
 
 | 消息类型 | 方向 | 参数 | 响应 |
 |----------|------|------|------|
-| GENERATE_REBUTTAL | C→B | `{ content: {title, author, text, url, voteCount} }` | `{ success, data/error }` |
+| GENERATE_REBUTTAL | C→B | `{ content, regenerateHint? }` | `{ success, data/error }` |
 | GET_CONFIG | C→B / P→B / O→B | - | `{ success, data: config }` |
 | SET_CONFIG | P→B / O→B | `config` | `{ success, data: config }` |
 | GET_HISTORY | P→B / O→B | `{ limit? }` | `{ success, data: history[] }` |
@@ -295,10 +295,10 @@ interface AIResponse {
 #### 配置 (zhihu_remark_config)
 ```json
 {
-  "provider": "openai",
+  "provider": "deepseek",
   "apiKey": "sk-...",
   "apiBase": "",
-  "model": "gpt-4o-mini",
+  "model": "deepseek-v4-pro",
   "temperature": 0.7,
   "maxTokens": 2048,
   "style": "gentle",

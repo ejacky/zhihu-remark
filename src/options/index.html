@@ -69,21 +69,9 @@
 
         <div class="form-group">
           <label for="model">模型</label>
-          <select id="model">
-            <optgroup label="OpenAI">
-              <option value="gpt-5.5">GPT-5.5</option>
-              <option value="gpt-5.4-pro">GPT-5.4 Pro</option>
-              <option value="gpt-4o">GPT-4o</option>
-              <option value="gpt-4o-mini" selected>GPT-4o Mini</option>
-              <option value="gpt-4-turbo">GPT-4 Turbo</option>
-              <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
-            </optgroup>
-            <optgroup label="Claude">
-              <option value="claude-3-5-sonnet-20241022">Claude 3.5 Sonnet</option>
-              <option value="claude-3-opus-20240229">Claude 3 Opus</option>
-              <option value="claude-3-haiku-20240307">Claude 3 Haiku</option>
-            </optgroup>
-          </select>
+          <select id="model"></select>
+          <input type="text" id="modelCustom" placeholder="输入模型名称" style="display:none;">
+          <span class="form-hint" id="modelHint">选择该提供商支持的模型版本</span>
         </div>
 
         <div class="form-row">

@@ -77,7 +77,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
  */
 async function handleGenerateRebuttal(data, sender) {
   try {
-    const { content } = data;
+    const { content, regenerateHint } = data;
 
     // 获取配置
     const config = await Storage.getConfig();
@@ -91,7 +91,7 @@ async function handleGenerateRebuttal(data, sender) {
     }
 
     // 调用 AI API
-    const result = await API.generateRebuttal(content, config);
+    const result = await API.generateRebuttal(content, config, regenerateHint);
 
     // 保存到历史记录
     if (config.features?.enableHistory !== false) {

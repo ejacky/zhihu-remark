@@ -6,19 +6,22 @@
 const API = {
   /**
    * 生成反驳
+   * @param {Object} content - 回答内容
+   * @param {Object} config - 用户配置
+   * @param {string} [regenerateHint] - 重新生成提示，非空时附加到 userPrompt
    */
-  async generateRebuttal(content, config) {
+  async generateRebuttal(content, config, regenerateHint) {
     const provider = config.provider || 'openai';
 
     switch (provider) {
       case 'openai':
       case 'deepseek':
       case 'kimi':
-        return this._callOpenAICompatible(provider, content, config);
+        return this._callOpenAICompatible(provider, content, config, regenerateHint);
       case 'anthropic':
-        return this._callAnthropic(content, config);
+        return this._callAnthropic(content, config, regenerateHint);
       case 'custom':
-        return this._callCustom(content, config);
+        return this._callCustom(content, config, regenerateHint);
       default:
         throw new Error(`不支持的 AI 提供商: ${provider}`);
     }
@@ -28,7 +31,7 @@ const API = {
    * 通用 OpenAI 兼容格式 API 调用
    * 适用于 OpenAI、DeepSeek、Kimi、自定义 API
    */
-  async _callOpenAICompatible(provider, content, config) {
+  async _callOpenAICompatible(provider, content, config, regenerateHint) {
     const apiKey = config.apiKey;
     if (!apiKey) {
       const providerNames = { openai: 'OpenAI', deepseek: 'DeepSeek', kimi: 'Kimi', custom: '自定义' };
@@ -50,9 +53,13 @@ const API = {
     const truncatedContent = { ...content, text };
 
     const systemPrompt = Prompts.getSystemPrompt(config.style, config);
-    const userPrompt = text.length > 3000
+    let userPrompt = text.length > 3000
       ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
       : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
+
+    if (regenerateHint) {
+      userPrompt += '\n\n' + regenerateHint;
+    }
 
     const requestBody = {
       model,
@@ -96,7 +103,7 @@ const API = {
   /**
    * 调用 Claude API
    */
-  async _callAnthropic(content, config) {
+  async _callAnthropic(content, config, regenerateHint) {
     const apiKey = config.apiKey;
     if (!apiKey) {
       throw new Error('请先在扩展设置中配置 Claude API Key');
@@ -114,9 +121,13 @@ const API = {
     const truncatedContent = { ...content, text };
 
     const systemPrompt = Prompts.getSystemPrompt(config.style, config);
-    const userPrompt = text.length > 3000
+    let userPrompt = text.length > 3000
       ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
       : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
+
+    if (regenerateHint) {
+      userPrompt += '\n\n' + regenerateHint;
+    }
 
     const response = await fetch(`${apiBase}/messages`, {
       method: 'POST',
@@ -153,11 +164,11 @@ const API = {
   /**
    * 调用自定义 API（OpenAI 兼容格式）
    */
-  async _callCustom(content, config) {
+  async _callCustom(content, config, regenerateHint) {
     if (!config.apiBase) {
       throw new Error('自定义 API 需要配置 API Base URL');
     }
-    return this._callOpenAICompatible('custom', content, config);
+    return this._callOpenAICompatible('custom', content, config, regenerateHint);
   },
 
   /**

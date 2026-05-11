@@ -13,11 +13,11 @@ const CONSTANTS = {
   // 默认配置
   DEFAULT_CONFIG: {
     // AI 提供商: 'openai' | 'anthropic' | 'deepseek' | 'kimi' | 'custom'
-    provider: 'openai',
+    provider: 'deepseek',
     // API 配置
     apiKey: '',
     apiBase: '', // 留空使用默认
-    model: 'deepseek-chat',
+    model: 'deepseek-v4-pro',
     // 生成参数
     temperature: 0.7,
     maxTokens: 2048,
@@ -44,19 +44,19 @@ const CONSTANTS = {
   PROVIDER_DEFAULTS: {
     openai: {
       apiBase: 'https://api.openai.com/v1',
-      models: ['gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
+      models: ['gpt-5.5', 'gpt-5.4-pro', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
     },
     anthropic: {
       apiBase: 'https://api.anthropic.com/v1',
-      models: ['claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307']
+      models: ['claude-4-opus-20250514', 'claude-4-sonnet-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307']
     },
     deepseek: {
       apiBase: 'https://api.deepseek.com/v1',
-      models: ['deepseek-chat', 'deepseek-reasoner']
+      models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-chat', 'deepseek-reasoner']
     },
     kimi: {
       apiBase: 'https://api.moonshot.cn/v1',
-      models: ['moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k']
+      models: ['kimi-k2.6', 'moonshot-v1-128k', 'moonshot-v1-32k', 'moonshot-v1-8k']
     },
     custom: {
       apiBase: '',

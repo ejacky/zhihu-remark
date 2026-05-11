@@ -174,6 +174,28 @@
         line-height: 1.6;
         color: #595959;
       }
+      .zhihu-remark-analysis-panel__rebuttal-section {
+        margin: 0 20px 16px;
+      }
+      .zhihu-remark-analysis-panel__rebuttal-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #262626;
+        margin-bottom: 8px;
+      }
+      .zhihu-remark-analysis-panel__rebuttal-content {
+        max-height: 200px;
+        overflow-y: auto;
+        padding: 12px 14px;
+        background: #f6f6f6;
+        border: 1px solid #e8e8e8;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.7;
+        color: #333;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
       .zhihu-remark-analysis-panel__actions {
         padding: 12px 20px 20px;
         display: flex;
