@@ -191,11 +191,31 @@ const UI = {
         actionsArea.appendChild(retryBtn);
       } else if (!result.analysis?.hasErrors) {
         // 未检测到错误
+        const noErrorBox = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__no-error'
+        });
         const noErrorTip = Utils.createElement('div', {
-          className: 'zhihu-remark-analysis-panel__no-error',
           textContent: 'AI 未在该回答中发现明显的事实错误或逻辑谬误。'
         });
-        contentArea.appendChild(noErrorTip);
+        noErrorBox.appendChild(noErrorTip);
+        const noErrorHint = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__no-error-hint',
+          textContent: 'AI 判定可能存在方差，如对内容有疑问可再次检测。'
+        });
+        noErrorBox.appendChild(noErrorHint);
+        contentArea.appendChild(noErrorBox);
+
+        // 再次检测按钮
+        const retryBtn = Utils.createElement('button', {
+          className: 'zhihu-remark-btn zhihu-remark-btn--secondary',
+          textContent: '🔄 再次检测',
+          onClick: () => {
+            retryBtn.disabled = true;
+            retryBtn.textContent = '检测中...';
+            if (onRegenerate) onRegenerate(currentStyle);
+          }
+        });
+        actionsArea.appendChild(retryBtn);
       } else {
         // 有数据：显示错误标签、摘要、反驳预览
         const { analysis, rebuttal } = result;

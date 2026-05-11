@@ -247,6 +247,11 @@
         color: #8c8c8c;
         font-size: 14px;
       }
+      .zhihu-remark-analysis-panel__no-error-hint {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #bfbfbf;
+      }
       .zhihu-remark-btn--primary {
         padding: 8px 20px;
         font-size: 14px;
