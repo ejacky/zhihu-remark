@@ -43,7 +43,7 @@
     document.querySelector(`input[name="provider"][value="${config.provider}"]`).checked = true;
     document.getElementById('apiKey').value = config.apiKey || '';
     document.getElementById('apiBase').value = config.apiBase || '';
-    document.getElementById('model').value = config.model || 'deepseek-chat';
+    renderModelSelect(config.provider, config.model);
     document.getElementById('temperature').value = config.temperature ?? 0.7;
     document.getElementById('temperatureValue').textContent = config.temperature ?? 0.7;
     document.getElementById('maxTokens').value = config.maxTokens || 2048;
@@ -74,16 +74,67 @@
     loadHistory();
   }
 
+  // 渲染模型选择器（下拉框或文本输入）
+  function renderModelSelect(provider, currentModel) {
+    const selectEl = document.getElementById('model');
+    const customInput = document.getElementById('modelCustom');
+    const hint = document.getElementById('modelHint');
+    const defaults = CONSTANTS.PROVIDER_DEFAULTS[provider];
+
+    if (provider === 'custom') {
+      // 自定义 API：显示文本输入框
+      selectEl.style.display = 'none';
+      customInput.style.display = 'block';
+      customInput.value = currentModel || '';
+      hint.textContent = '输入自定义模型的完整名称';
+    } else {
+      // 标准提供商：显示下拉框
+      selectEl.style.display = 'block';
+      customInput.style.display = 'none';
+      selectEl.innerHTML = '';
+
+      const models = defaults?.models || [];
+      models.forEach(model => {
+        const option = document.createElement('option');
+        option.value = model;
+        option.textContent = model;
+        if (model === currentModel) {
+          option.selected = true;
+        }
+        selectEl.appendChild(option);
+      });
+
+      // 如果当前模型不在列表中，也添加进去（兼容旧配置）
+      if (currentModel && !models.includes(currentModel)) {
+        const option = document.createElement('option');
+        option.value = currentModel;
+        option.textContent = currentModel + '（自定义）';
+        option.selected = true;
+        selectEl.appendChild(option);
+      }
+
+      hint.textContent = `选择 ${provider} 支持的模型版本`;
+    }
+  }
+
   // 收集表单数据
   function collectFormData() {
     const provider = document.querySelector('input[name="provider"]:checked').value;
     const style = document.querySelector('.style-card.selected')?.dataset.style || 'gentle';
 
+    // 根据提供商类型获取模型值
+    let model;
+    if (provider === 'custom') {
+      model = document.getElementById('modelCustom').value.trim();
+    } else {
+      model = document.getElementById('model').value;
+    }
+
     return {
       provider,
       apiKey: document.getElementById('apiKey').value.trim(),
       apiBase: document.getElementById('apiBase').value.trim(),
-      model: document.getElementById('model').value,
+      model,
       temperature: parseFloat(document.getElementById('temperature').value),
       maxTokens: parseInt(document.getElementById('maxTokens').value),
       style,
@@ -198,11 +249,10 @@
     radio.addEventListener('change', () => {
       const isCustom = radio.value === 'custom';
       document.getElementById('apiBaseGroup').style.display = isCustom ? 'block' : 'none';
-      // 同步切换到该提供商的默认模型
+      // 重新渲染模型选择器
       const defaults = CONSTANTS.PROVIDER_DEFAULTS[radio.value];
-      if (defaults && defaults.models.length > 0) {
-        document.getElementById('model').value = defaults.models[0];
-      }
+      const defaultModel = defaults?.models?.[0] || '';
+      renderModelSelect(radio.value, defaultModel);
     });
   });
 
