@@ -22,6 +22,21 @@
     // 启动 DOM 观察者，自动注入按钮
     const observer = Injector.startObserver();
 
+    // SPA 路由变化监听（知乎是单页应用，URL 变化不会刷新页面）
+    const originalPushState = history.pushState;
+    history.pushState = function(...args) {
+      originalPushState.apply(this, args);
+      setTimeout(() => Injector.injectAll(), 600);
+    };
+    const originalReplaceState = history.replaceState;
+    history.replaceState = function(...args) {
+      originalReplaceState.apply(this, args);
+      setTimeout(() => Injector.injectAll(), 600);
+    };
+    window.addEventListener('popstate', () => {
+      setTimeout(() => Injector.injectAll(), 600);
+    });
+
     // 页面卸载时清理
     window.addEventListener('beforeunload', () => {
       if (observer) observer.disconnect();

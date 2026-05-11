@@ -174,9 +174,13 @@ const Extractor = {
    * 获取所有回答元素
    */
   getAllAnswerElements() {
-    // 新版知乎
+    // 问题页回答
     const modern = document.querySelectorAll('.AnswerCard, .List-item, .ContentItem.AnswerItem');
     if (modern.length > 0) return Array.from(modern);
+
+    // 推荐页 / 首页 Feed
+    const feed = document.querySelectorAll('.TopstoryItem, .Topstory-main .ContentItem, .Topstory-recommend .ContentItem');
+    if (feed.length > 0) return Array.from(feed);
 
     // 旧版
     const legacy = document.querySelectorAll('.AnswerItem, .AnswerCard');
@@ -185,6 +189,10 @@ const Extractor = {
     // 专栏文章
     const article = document.querySelectorAll('.Post-content, .Post-RichTextContainer');
     if (article.length > 0) return Array.from(article);
+
+    // 搜索页结果
+    const search = document.querySelectorAll('.SearchResult-Card .ContentItem, .SearchResult .ContentItem');
+    if (search.length > 0) return Array.from(search);
 
     return [];
   },

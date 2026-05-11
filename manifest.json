@@ -20,8 +20,7 @@
   "content_scripts": [
     {
       "matches": [
-        "https://www.zhihu.com/question/*",
-        "https://www.zhihu.com/answer/*",
+        "https://www.zhihu.com/*",
         "https://zhuanlan.zhihu.com/p/*"
       ],
       "js": [

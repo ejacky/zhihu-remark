@@ -40,25 +40,34 @@ const Injector = {
    * 查找评论区域
    */
   _findCommentArea(answerElement) {
-    // 策略1：新版知乎 - 评论按钮所在的 actions bar
-    const actionsBar = answerElement.querySelector('.ContentItem-actions, .AnswerCard-actions, .List-item .ContentItem-actions');
+    // 策略1：常见操作栏
+    const actionsBar = answerElement.querySelector(
+      '.ContentItem-actions, .AnswerCard-actions, .List-item .ContentItem-actions, .TopstoryItem .ContentItem-actions'
+    );
     if (actionsBar) {
-      // 检查是否已有按钮
       if (!actionsBar.querySelector('.zhihu-remark-btn')) {
         return actionsBar;
       }
     }
 
     // 策略2：在评论按钮旁边
-    const commentBtn = answerElement.querySelector('button[aria-label*="评论"], .ContentItem-action button[data-za-detail-view-id*="comment"]');
+    const commentBtn = answerElement.querySelector(
+      'button[aria-label*="评论"], .ContentItem-action button[data-za-detail-view-id*="comment"], [data-za-detail-view-id*="Comment"]'
+    );
     if (commentBtn && commentBtn.parentNode) {
       return commentBtn.parentNode;
     }
 
     // 策略3：底部操作栏
-    const bottomBar = answerElement.querySelector('.RichContent-bottom, .ContentItem-bottom');
+    const bottomBar = answerElement.querySelector('.RichContent-bottom, .ContentItem-bottom, .TopstoryItem-bottom');
     if (bottomBar) {
       return bottomBar;
+    }
+
+    // 策略4：通用的操作按钮容器
+    const genericActions = answerElement.querySelector('[class*="actions" i], [class*="ActionBar" i], [class*="operations" i]');
+    if (genericActions && !genericActions.querySelector('.zhihu-remark-btn')) {
+      return genericActions;
     }
 
     return null;
@@ -406,6 +415,17 @@ const Injector = {
   },
 
   /**
+   * 扫描指定容器内的回答元素并注入按钮
+   */
+  _scanAndInject(container) {
+    const selectors = '.AnswerCard, .List-item, .ContentItem, .TopstoryItem';
+    const answers = container.matches?.(selectors)
+      ? [container]
+      : container.querySelectorAll(selectors);
+    answers.forEach(answer => this._injectToAnswer(answer));
+  },
+
+  /**
    * 监听 DOM 变化，动态注入按钮
    */
   startObserver() {
@@ -415,23 +435,39 @@ const Injector = {
     }, 500);
 
     const observer = new MutationObserver((mutations) => {
-      // 检查是否有新的回答被添加
+      // 检查是否有新的回答或 Modal 被添加
       const hasNewContent = mutations.some(mutation => {
         return Array.from(mutation.addedNodes).some(node => {
           if (node.nodeType !== Node.ELEMENT_NODE) return false;
-          return node.matches?.('.AnswerCard, .List-item, .ContentItem') ||
-                 node.querySelector?.('.AnswerCard, .List-item, .ContentItem');
+          return node.matches?.('.AnswerCard, .List-item, .ContentItem, .TopstoryItem, .Card, .Modal, .Drawer, [class*="modal" i], [class*="drawer" i]') ||
+                 node.querySelector?.('.AnswerCard, .List-item, .ContentItem, .TopstoryItem, .Modal, .Drawer');
         });
       });
 
-      if (hasNewContent) {
+      // 检测属性变化（class 变化可能意味着展开/收起）
+      const hasAttrChange = mutations.some(m => m.type === 'attributes');
+
+      if (hasNewContent || hasAttrChange) {
         debouncedInject();
       }
+
+      // Modal/Drawer 弹出时立即扫描内部（不防抖）
+      mutations.forEach(mutation => {
+        Array.from(mutation.addedNodes).forEach(node => {
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.matches?.('.Modal, .Drawer, [class*="modal" i], [class*="drawer" i]')) {
+              this._scanAndInject(node);
+            }
+          }
+        });
+      });
     });
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style']
     });
 
     // 初始注入
