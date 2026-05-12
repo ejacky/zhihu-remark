@@ -51,7 +51,7 @@ const CONSTANTS = {
       models: ['claude-4-opus-20250514', 'claude-4-sonnet-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307']
     },
     deepseek: {
-      apiBase: 'https://api.deepseek.com/v1',
+      apiBase: 'https://api.deepseek.com',
       models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-chat', 'deepseek-reasoner']
     },
     kimi: {

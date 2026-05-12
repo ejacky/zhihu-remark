@@ -133,7 +133,7 @@
     return {
       provider,
       apiKey: document.getElementById('apiKey').value.trim(),
-      apiBase: document.getElementById('apiBase').value.trim(),
+      apiBase: provider === 'custom' ? document.getElementById('apiBase').value.trim() : '',
       model,
       temperature: parseFloat(document.getElementById('temperature').value),
       maxTokens: parseInt(document.getElementById('maxTokens').value),
@@ -249,6 +249,9 @@
     radio.addEventListener('change', () => {
       const isCustom = radio.value === 'custom';
       document.getElementById('apiBaseGroup').style.display = isCustom ? 'block' : 'none';
+      if (!isCustom) {
+        document.getElementById('apiBase').value = '';
+      }
       // 重新渲染模型选择器
       const defaults = CONSTANTS.PROVIDER_DEFAULTS[radio.value];
       const defaultModel = defaults?.models?.[0] || '';
