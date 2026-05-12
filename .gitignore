@@ -1,0 +1,22 @@
+# 依赖和构建产物
+node_modules/
+dist/
+build/
+*.zip
+*.crx
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Kimi CLI 运行时工作区（如有）
+/.kimi/active/
+
+# 注意：/.kimi/plans/ 是归档的历史计划文件，纳入 git 版本控制
