@@ -25,22 +25,61 @@ const Extractor = {
   },
 
   /**
-   * 提取页面标题（问题标题）
+   * 提取问题标题
+   * @param {Element} answerElement - 回答元素（推荐页需传入，从元素内部提取问题标题）
    */
-  extractPageTitle() {
-    // 新版知乎
+  extractPageTitle(answerElement) {
+    // 策略1：从回答元素内部提取（推荐页 Feed 流等场景，每个回答有自己的问题标题）
+    if (answerElement && answerElement.nodeType === Node.ELEMENT_NODE) {
+      const innerTitle = answerElement.querySelector(
+        '.ContentItem-title, h2.ContentItem-title, .ContentItem-meta a[href*="/question/"], [data-za-detail-view-id="view_question"]'
+      );
+      if (innerTitle) {
+        const text = innerTitle.textContent.trim();
+        if (text && text.length > 3 && text.length < 200) return text;
+      }
+
+      // 尝试从链接的 aria-label 或 title 中提取
+      const questionLink = answerElement.querySelector('a[href*="/question/"]');
+      if (questionLink) {
+        const text = (questionLink.getAttribute('aria-label') || questionLink.getAttribute('title') || questionLink.textContent).trim();
+        if (text && text.length > 3 && text.length < 200) return text;
+      }
+    }
+
+    // 策略2：页面级问题标题（问题详情页）
     const h1 = document.querySelector('h1.QuestionHeader-title, h1[data-za-detail-view-id]');
     if (h1) return h1.textContent.trim();
 
-    // 旧版
+    // 策略3：meta 标签
     const titleMeta = document.querySelector('meta[property="og:title"]');
     if (titleMeta) {
       const title = titleMeta.getAttribute('content');
-      if (title) return title.replace(' - 知乎', '').trim();
+      if (title) {
+        const cleaned = title.replace(' - 知乎', '').trim();
+        // 过滤掉推荐页的通用标题
+        if (cleaned && !this._isGenericPageTitle(cleaned)) return cleaned;
+      }
     }
 
-    // Fallback
-    return document.title.replace(' - 知乎', '').trim();
+    // 策略4：Fallback
+    const pageTitle = document.title.replace(' - 知乎', '').trim();
+    if (!this._isGenericPageTitle(pageTitle)) return pageTitle;
+
+    return '知乎回答';
+  },
+
+  /**
+   * 判断是否为推荐页的通用页面标题（而非具体问题标题）
+   */
+  _isGenericPageTitle(title) {
+    if (!title) return true;
+    const genericTitles = [
+      '我的首页', '首页', '知乎', '推荐', '热榜', '关注',
+      'zhihu', '推荐页', '发现', ' Zhihu'
+    ];
+    const lower = title.toLowerCase();
+    return genericTitles.some(g => lower.includes(g.toLowerCase()));
   },
 
   /**
@@ -84,7 +123,7 @@ const Extractor = {
     }
 
     return {
-      title: this.extractPageTitle(),
+      title: this.extractPageTitle(answerElement),
       author,
       text,
       voteCount,
@@ -115,7 +154,7 @@ const Extractor = {
     }
 
     return {
-      title: this.extractPageTitle(),
+      title: this.extractPageTitle(answerElement),
       author,
       text,
       voteCount,
@@ -150,7 +189,7 @@ const Extractor = {
     const text = bestCandidate ? this._cleanText(bestCandidate.innerText || bestCandidate.textContent || '') : '';
 
     return {
-      title: this.extractPageTitle(),
+      title: this.extractPageTitle(answerElement),
       author: '未知作者',
       text,
       voteCount: '未知',

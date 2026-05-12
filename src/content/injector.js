@@ -31,6 +31,9 @@ const Injector = {
       return;
     }
 
+    // 跳过被折叠的回答（等用户展开后 MutationObserver 会重新注入）
+    if (this._isContentTruncated(answerElement, '')) return;
+
     const button = this._createButton(answerElement);
     commentArea.appendChild(button);
     this._injectedElements.add(answerElement);
@@ -97,12 +100,39 @@ const Injector = {
   },
 
   /**
+   * 检测回答内容是否被折叠（不完整）
+   */
+  _isContentTruncated(answerElement, text) {
+    // 1. RichContent 折叠类（知乎推荐页使用 is-collapsed）
+    const richContent = answerElement.querySelector('.RichContent');
+    if (richContent?.classList.contains('is-collapsed') || richContent?.classList.contains('RichContent--isCollapsible')) return true;
+
+    // 2. 搜索"阅读全文"按钮（文字匹配，处理嵌套元素的零宽空格干扰）
+    const buttons = answerElement.querySelectorAll('button, a');
+    for (const btn of buttons) {
+      const txt = (btn.textContent || '').trim();
+      if (txt.includes('阅读全文') || txt === '展开' || txt === '展开全文') return true;
+    }
+
+    // 3. 类名兜底（排除"收起"按钮）
+    const classBtns = answerElement.querySelectorAll('.ContentItem-more, [class*="readMore" i], [class*="lookMore" i], .RichContent-lookMore, .ContentItem-rightButton');
+    for (const btn of classBtns) {
+      const txt = (btn.textContent || '').trim();
+      if (!txt.includes('收起') && !txt.includes('折叠')) return true;
+    }
+
+    // 4. 文本末尾省略号检测
+    const trimmed = text.trim();
+    if (trimmed && (trimmed.endsWith('...') || trimmed.endsWith('…'))) return true;
+
+    return false;
+  },
+
+  /**
    * 处理生成按钮点击
    */
   async _handleGenerateClick(button, answerElement) {
     const originalText = button.textContent;
-    button.disabled = true;
-    button.textContent = CONSTANTS.UI.BUTTON_LOADING_TEXT;
 
     try {
       // 提取内容
@@ -111,50 +141,9 @@ const Injector = {
         throw new Error('未能提取到有效的回答内容，请尝试刷新页面');
       }
 
-      // 获取当前配置的风格
-      const configResponse = await this._sendMessage({ type: CONSTANTS.MESSAGE_TYPES.GET_CONFIG });
-      const defaultStyle = configResponse.success ? configResponse.data.style : 'gentle';
-
-      // 初始化多风格缓存
-      const styleResults = {
-        [defaultStyle]: null
-      };
-      let currentStyle = defaultStyle;
-
-      // 首次生成
-      const loading = UI.createLoading('正在分析回答内容...');
-      try {
-        loading.updateText('正在调用 AI 分析...');
-        const response = await this._sendGenerateMessage(content, defaultStyle);
-
-        if (!response.success) {
-          throw new Error(response.error || '生成失败');
-        }
-
-        styleResults[defaultStyle] = {
-          analysis: response.data.analysis,
-          rebuttal: response.data.rebuttal,
-          loading: false,
-          error: null
-        };
-
-        if (!response.data.analysis.hasErrors) {
-          UI.showWarning('未检测到明显错误，未生成反驳内容');
-        }
-      } catch (error) {
-        styleResults[defaultStyle] = {
-          analysis: null,
-          rebuttal: '',
-          loading: false,
-          error: error.message || '生成失败'
-        };
-        UI.showError(error.message || '生成失败，请检查配置后重试');
-      } finally {
-        loading.remove();
-      }
-
-      // 打开面板
-      this._openAnalysisPanel(content, answerElement, styleResults, currentStyle);
+      button.disabled = true;
+      button.textContent = CONSTANTS.UI.BUTTON_LOADING_TEXT;
+      await this._executeGenerate(content, answerElement);
 
     } catch (error) {
       console.error('[知乎反驳助手]', error);
@@ -163,6 +152,56 @@ const Injector = {
       button.disabled = false;
       button.textContent = originalText;
     }
+  },
+
+  /**
+   * 执行 AI 生成反驳（提取为独立方法供复用）
+   */
+  async _executeGenerate(content, answerElement) {
+    // 获取当前配置的风格
+    const configResponse = await this._sendMessage({ type: CONSTANTS.MESSAGE_TYPES.GET_CONFIG });
+    const defaultStyle = configResponse.success ? configResponse.data.style : 'gentle';
+
+    // 初始化多风格缓存
+    const styleResults = {
+      [defaultStyle]: null
+    };
+    let currentStyle = defaultStyle;
+
+    // 首次生成
+    const loading = UI.createLoading('正在分析回答内容...');
+    try {
+      loading.updateText('正在调用 AI 分析...');
+      const response = await this._sendGenerateMessage(content, defaultStyle);
+
+      if (!response.success) {
+        throw new Error(response.error || '生成失败');
+      }
+
+      styleResults[defaultStyle] = {
+        analysis: response.data.analysis,
+        rebuttal: response.data.rebuttal,
+        loading: false,
+        error: null
+      };
+
+      if (!response.data.analysis.hasErrors) {
+        UI.showWarning('未检测到明显错误，未生成反驳内容');
+      }
+    } catch (error) {
+      styleResults[defaultStyle] = {
+        analysis: null,
+        rebuttal: '',
+        loading: false,
+        error: error.message || '生成失败'
+      };
+      UI.showError(error.message || '生成失败，请检查配置后重试');
+    } finally {
+      loading.remove();
+    }
+
+    // 打开面板
+    this._openAnalysisPanel(content, answerElement, styleResults, currentStyle);
   },
 
   /**
