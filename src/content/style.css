@@ -18,14 +18,11 @@
 
 /* 按钮在知乎深色模式下的适配 */
 html[data-theme="dark"] .zhihu-remark-btn--generate {
-  background: #1a3a5c;
-  color: #58a6ff;
-  border-color: #1f6feb;
+  color: #8c9ab5;
 }
-
 html[data-theme="dark"] .zhihu-remark-btn--generate:hover {
-  background: #1f6feb;
-  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+  color: #b0c0d8;
 }
 
 /* 确保按钮不会被知乎样式覆盖 */
@@ -34,29 +31,27 @@ html[data-theme="dark"] .zhihu-remark-btn--generate:hover {
   display: inline-flex !important;
   align-items: center;
   gap: 4px;
-  padding: 6px 12px;
-  margin-left: 8px;
+  padding: 0 10px;
   font-size: 14px;
-  font-weight: 500;
-  color: #056de8;
-  background: #e6f0fd;
-  border: 1px solid #bbd6f7;
-  border-radius: 6px;
+  font-weight: 400;
+  color: #535861;
+  background: none;
+  border: none;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background 0.15s ease;
   white-space: nowrap;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 20px;
 }
-
 .zhihu-remark-btn--generate:hover {
-  background: #056de8;
-  color: #fff;
-  border-color: #056de8;
+  background: rgba(0, 0, 0, 0.04);
+  color: #535861;
 }
-
 .zhihu-remark-btn--generate:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
+  background: none;
 }
 
 /* 分析面板反驳预览 */

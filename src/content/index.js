@@ -63,31 +63,32 @@
     const style = document.createElement('style');
     style.id = styleId;
     style.textContent = `
-      /* 生成反驳按钮 */
+      /* 生成反驳按钮（与知乎原生操作按钮风格一致） */
       .zhihu-remark-btn--generate {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        padding: 6px 12px;
-        margin-left: 8px;
+        padding: 0 10px;
         font-size: 14px;
-        font-weight: 500;
-        color: #056de8;
-        background: #e6f0fd;
-        border: 1px solid #bbd6f7;
-        border-radius: 6px;
+        font-weight: 400;
+        color: #535861;
+        background: none;
+        border: none;
+        border-radius: 4px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: background 0.15s ease;
         white-space: nowrap;
+        font-family: inherit;
+        line-height: 20px;
       }
       .zhihu-remark-btn--generate:hover {
-        background: #056de8;
-        color: #fff;
-        border-color: #056de8;
+        background: rgba(0, 0, 0, 0.04);
+        color: #535861;
       }
       .zhihu-remark-btn--generate:disabled {
-        opacity: 0.6;
+        opacity: 0.5;
         cursor: not-allowed;
+        background: none;
       }
 
       /* 通知提示 */
