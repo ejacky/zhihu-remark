@@ -137,7 +137,7 @@ const Injector = {
     try {
       // 提取内容
       const content = Extractor.extractFromElement(answerElement);
-      if (!content.text || content.text.length < 50) {
+      if (!content.text || content.text.length < 30) {
         throw new Error('未能提取到有效的回答内容，请尝试刷新页面');
       }
 

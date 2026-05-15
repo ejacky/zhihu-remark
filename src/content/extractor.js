@@ -5,6 +5,8 @@
  * @doc docs/USER_GUIDE.md#如何使用反驳助手
  */
 
+const MIN_TEXT_LENGTH = 30;
+
 const Extractor = {
   /**
    * 主提取函数 - 尝试多种策略提取回答内容
@@ -12,18 +14,24 @@ const Extractor = {
   extractAnswer(element) {
     // 策略1：新版知乎（2024-2025）
     const result = this._tryModernZhihu(element);
-    if (result && result.text && result.text.length > 50) {
+    if (result && result.text && result.text.length >= MIN_TEXT_LENGTH) {
       return result;
     }
 
     // 策略2：旧版知乎
     const result2 = this._tryLegacyZhihu(element);
-    if (result2 && result2.text && result2.text.length > 50) {
+    if (result2 && result2.text && result2.text.length >= MIN_TEXT_LENGTH) {
       return result2;
     }
 
     // 策略3：通用提取（fallback）
-    return this._tryGenericExtraction(element);
+    const result3 = this._tryGenericExtraction(element);
+    if (result3 && result3.text && result3.text.length >= MIN_TEXT_LENGTH) {
+      return result3;
+    }
+
+    // 所有策略均失败，返回空结果
+    return { title: '', author: '', text: '', voteCount: '0', url: '', strategy: 'failed' };
   },
 
   /**
