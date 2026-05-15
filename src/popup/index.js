@@ -1,5 +1,6 @@
 /**
  * 知乎反驳助手 - Popup 脚本
+ * @doc docs/USER_GUIDE.md#Popup-面板使用说明
  */
 
 (async function () {

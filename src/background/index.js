@@ -1,5 +1,6 @@
 /**
  * 知乎反驳助手 - Service Worker（后台脚本）主入口
+ * @doc docs/TECH_DESIGN.md#后台架构与消息处理
  */
 
 // 加载依赖脚本（共享模块和后台模块）

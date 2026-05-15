@@ -1,6 +1,8 @@
 /**
  * 知乎反驳助手 - 内容提取器
  * 负责从知乎页面提取回答的标题、正文、作者等信息
+ * @doc docs/TECH_DESIGN.md#内容提取模块
+ * @doc docs/USER_GUIDE.md#如何使用反驳助手
  */
 
 const Extractor = {
