@@ -27,6 +27,24 @@ const Extractor = {
   },
 
   /**
+   * 判断文本是否为日期/时间字符串（而非问题标题）
+   */
+  _isDateLikeText(text) {
+    if (!text) return true;
+    // 包含常见日期前缀或时间格式
+    const datePatterns = [
+      /发布于\s*\d{4}[-/]\d{1,2}[-/]\d{1,2}/,
+      /编辑于\s*\d{4}[-/]\d{1,2}[-/]\d{1,2}/,
+      /^\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{2}$/,
+      /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/,
+      /^\d{1,2}:\d{2}$/,
+      /\d{4}年\d{1,2}月\d{1,2}日/,
+      /^\d{4}[-/]\d{1,2}[-/]\d{1,2}\s+\d{1,2}:\d{2}:\d{2}$/
+    ];
+    return datePatterns.some(p => p.test(text));
+  },
+
+  /**
    * 提取问题标题
    * @param {Element} answerElement - 回答元素（推荐页需传入，从元素内部提取问题标题）
    */
@@ -38,22 +56,36 @@ const Extractor = {
       );
       if (innerTitle) {
         const text = innerTitle.textContent.trim();
-        if (text && text.length > 3 && text.length < 200) return text;
+        if (text && text.length > 3 && text.length < 200 && !this._isDateLikeText(text)) return text;
       }
 
       // 尝试从链接的 aria-label 或 title 中提取
       const questionLink = answerElement.querySelector('a[href*="/question/"]');
       if (questionLink) {
         const text = (questionLink.getAttribute('aria-label') || questionLink.getAttribute('title') || questionLink.textContent).trim();
-        if (text && text.length > 3 && text.length < 200) return text;
+        if (text && text.length > 3 && text.length < 200 && !this._isDateLikeText(text)) return text;
       }
     }
 
-    // 策略2：页面级问题标题（问题详情页）
-    const h1 = document.querySelector('h1.QuestionHeader-title, h1[data-za-detail-view-id]');
-    if (h1) return h1.textContent.trim();
+    // 策略2：从页面级 data-zop-question 属性提取（问题详情页、单个回答页）
+    // 该属性包含 JSON 格式的问题元数据，比 DOM 选择器更可靠
+    const zopQuestion = document.querySelector('[data-zop-question]');
+    if (zopQuestion) {
+      try {
+        const data = JSON.parse(zopQuestion.getAttribute('data-zop-question'));
+        if (data && data.title && data.title.length > 3) {
+          return data.title;
+        }
+      } catch (e) {
+        // 解析失败，继续后续策略
+      }
+    }
 
-    // 策略3：meta 标签
+    // 策略3：页面级问题标题（问题详情页）
+    const questionTitle = document.querySelector('h1.QuestionHeader-title');
+    if (questionTitle) return questionTitle.textContent.trim();
+
+    // 策略4：meta 标签
     const titleMeta = document.querySelector('meta[property="og:title"]');
     if (titleMeta) {
       const title = titleMeta.getAttribute('content');
