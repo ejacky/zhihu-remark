@@ -165,6 +165,14 @@
               <div class="checkbox-desc">违背基础科学原理或已被证伪的理论</div>
             </div>
           </label>
+          <label class="checkbox-item">
+            <input type="checkbox" id="err-argumentIncomplete" checked>
+            <span class="checkbox-icon">🧩</span>
+            <div class="checkbox-info">
+              <div class="checkbox-title">论证不完整</div>
+              <div class="checkbox-desc">回答遗漏了问题的关键原因、视角或必要条件</div>
+            </div>
+          </label>
         </div>
       </section>
 
@@ -208,6 +216,42 @@
             <input type="checkbox" id="feat-enableHistory" class="toggle-switch" checked>
             <span class="toggle-slider"></span>
           </label>
+          <label class="toggle-item">
+            <div class="toggle-info">
+              <div class="toggle-title">补充遗漏视角</div>
+              <div class="toggle-desc">对原因分析类问题，自动检查并补充被忽略的关键论点</div>
+            </div>
+            <input type="checkbox" id="feat-enableCompletenessCheck" class="toggle-switch" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div class="panel-title" style="margin-top: 32px;">
+          <h2>完整性检查严格程度</h2>
+          <p>调整 AI 对「论证不完整」的敏感程度</p>
+        </div>
+        <div class="radio-group" id="strictnessGroup">
+          <label class="radio-label">
+            <input type="radio" name="strictness" value="loose">
+            <span>宽松</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="strictness" value="standard" checked>
+            <span>标准</span>
+          </label>
+          <label class="radio-label">
+            <input type="radio" name="strictness" value="strict">
+            <span>严格</span>
+          </label>
+        </div>
+
+        <div class="panel-title" style="margin-top: 32px;">
+          <h2>高级：自定义 Prompt 后缀</h2>
+          <p>在系统 Prompt 末尾追加您自己的规则（仅对高级用户）</p>
+        </div>
+        <div class="form-group">
+          <textarea id="customPromptSuffix" rows="4" placeholder="例如：对历史话题，必须同时考虑政治、经济、军事三个维度。"></textarea>
+          <span class="form-hint">留空则不追加任何内容</span>
         </div>
       </section>
 

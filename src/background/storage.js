@@ -48,6 +48,7 @@ const Storage = {
     const newItem = {
       id: Utils.generateId(),
       timestamp: Date.now(),
+      feedback: null,
       ...item
     };
 
@@ -59,6 +60,37 @@ const Storage = {
     });
 
     return newItem;
+  },
+
+  /**
+   * 更新历史记录反馈
+   * @param {string} id - 历史记录 ID
+   * @param {Object} feedback - 反馈数据 { type, reason, customReason, timestamp }
+   */
+  async updateHistoryFeedback(id, feedback) {
+    const history = await this.getHistory(100);
+    const updated = history.map(item => {
+      if (item.id === id) {
+        return { ...item, feedback };
+      }
+      return item;
+    });
+
+    await chrome.storage.local.set({
+      [CONSTANTS.STORAGE_KEYS.HISTORY]: updated.slice(0, CONSTANTS.UI.MAX_HISTORY_ITEMS)
+    });
+
+    return updated.find(item => item.id === id);
+  },
+
+  /**
+   * 根据 URL 查找最近一条有反馈的历史记录
+   * @param {string} url - 页面 URL
+   */
+  async getLatestFeedbackByUrl(url) {
+    if (!url) return null;
+    const history = await this.getHistory(100);
+    return history.find(item => item.url === url && item.feedback) || null;
   },
 
   /**

@@ -29,15 +29,19 @@ const CONSTANTS = {
       logicFallacy: true,
       historicalNihilism: true,
       dataFraud: true,
-      scienceError: true
+      scienceError: true,
+      argumentIncomplete: true // 论证不完整 / 遗漏关键视角
     },
     // 功能开关
     features: {
-      showAnalysis: true,      // 显示错误分析
-      autoFill: true,          // 自动填充评论框
-      showSource: true,        // 要求AI标注来源
-      enableHistory: true      // 启用历史记录
-    }
+      showAnalysis: true,          // 显示错误分析
+      autoFill: true,              // 自动填充评论框
+      showSource: true,            // 要求AI标注来源
+      enableHistory: true,         // 启用历史记录
+      enableCompletenessCheck: true // 补充遗漏视角（动态完整性检查）
+    },
+    // 完整性检查严格程度
+    strictness: 'standard'
   },
 
   // 提供商默认配置
@@ -119,6 +123,34 @@ const CONSTANTS = {
       label: '科学错误',
       description: '违背基础科学原理或已被证伪的理论',
       icon: '🔬'
+    },
+    argumentIncomplete: {
+      key: 'argumentIncomplete',
+      label: '论证不完整',
+      description: '回答遗漏了问题的关键原因、视角或必要条件',
+      icon: '🧩'
+    }
+  },
+
+  // 完整性检查严格程度
+  STRICTNESS_LEVELS: {
+    loose: {
+      key: 'loose',
+      name: '宽松',
+      description: '仅在明显遗漏时指出',
+      toneHint: '如果回答明显遗漏了问题的关键原因或视角，再补充说明；不必苛求面面俱到。'
+    },
+    standard: {
+      key: 'standard',
+      name: '标准',
+      description: '正常检查遗漏的关键论点',
+      toneHint: '请检查回答是否遗漏了问题的关键原因、视角或必要条件，若有遗漏，在反驳中补充更重要的视角。'
+    },
+    strict: {
+      key: 'strict',
+      name: '严格',
+      description: '主动挖掘被忽略的深层原因',
+      toneHint: '请深入检查回答是否遗漏了关键原因、反方证据或更深层视角，主动补充被忽略的重要内容。'
     }
   },
 
@@ -129,6 +161,7 @@ const CONSTANTS = {
     SET_CONFIG: 'SET_CONFIG',
     GET_HISTORY: 'GET_HISTORY',
     CLEAR_HISTORY: 'CLEAR_HISTORY',
+    UPDATE_FEEDBACK: 'UPDATE_FEEDBACK',
     SHOW_NOTIFICATION: 'SHOW_NOTIFICATION'
   },
 

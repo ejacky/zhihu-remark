@@ -119,7 +119,8 @@ body {
 .form-group input[type="text"],
 .form-group input[type="password"],
 .form-group input[type="number"],
-.form-group select {
+.form-group select,
+.form-group textarea {
   width: 100%;
   padding: 10px 12px;
   font-size: 14px;
@@ -127,10 +128,13 @@ body {
   border-radius: 8px;
   background: #fff;
   transition: border-color 0.2s;
+  font-family: inherit;
+  resize: vertical;
 }
 
 .form-group input:focus,
-.form-group select:focus {
+.form-group select:focus,
+.form-group textarea:focus {
   outline: none;
   border-color: #056de8;
   box-shadow: 0 0 0 3px rgba(5, 109, 232, 0.1);

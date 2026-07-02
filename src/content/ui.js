@@ -78,10 +78,11 @@ const UI = {
    * @param {Function} options.onStyleChange - 切换风格回调 (style) => {}
    * @param {Function} options.onRegenerate - 重新生成回调 (style) => {}
    * @param {Function} options.onUse - 使用此反驳回调 (style) => {}
+   * @param {Function} options.onFeedback - 反馈回调 (style, feedback) => {}
    * @param {Function} options.onDismiss - 关闭面板回调
    * @returns {Object} { element, update, remove }
    */
-  createAnalysisPanel({ styleResults, currentStyle, onStyleChange, onRegenerate, onUse, onDismiss }) {
+  createAnalysisPanel({ styleResults, currentStyle, onStyleChange, onRegenerate, onUse, onFeedback, onDismiss }) {
     const panel = Utils.createElement('div', {
       className: 'zhihu-remark-analysis-panel'
     });
@@ -261,6 +262,46 @@ const UI = {
           contentArea.appendChild(rebuttalSection);
         }
 
+        // 反馈区
+        const feedbackArea = Utils.createElement('div', {
+          className: 'zhihu-remark-feedback-area'
+        });
+        if (result.feedback) {
+          const feedbackThanks = Utils.createElement('div', {
+            className: 'zhihu-remark-feedback-thanks',
+            textContent: `✅ 已收到反馈：${this._getFeedbackLabel(result.feedback.type)}`
+          });
+          feedbackArea.appendChild(feedbackThanks);
+        } else {
+          const feedbackLabel = Utils.createElement('span', {
+            className: 'zhihu-remark-feedback-label',
+            textContent: '这次生成有帮助吗？'
+          });
+          feedbackArea.appendChild(feedbackLabel);
+
+          const feedbackButtons = [
+            { type: 'helpful', label: '👍 有用' },
+            { type: 'missedPoint', label: '漏重点' },
+            { type: 'tooVague', label: '太泛泛' },
+            { type: 'inaccurate', label: '不准确' },
+            { type: 'toneIssue', label: '语气差' }
+          ];
+
+          feedbackButtons.forEach(({ type, label }) => {
+            const btn = Utils.createElement('button', {
+              className: 'zhihu-remark-feedback-btn',
+              textContent: label,
+              onClick: () => {
+                if (onFeedback) {
+                  onFeedback(currentStyle, { type });
+                }
+              }
+            });
+            feedbackArea.appendChild(btn);
+          });
+        }
+        actionsArea.appendChild(feedbackArea);
+
         // 操作按钮
         const regenerateBtn = Utils.createElement('button', {
           className: 'zhihu-remark-btn zhihu-remark-btn--secondary',
@@ -353,6 +394,21 @@ const UI = {
         panel.parentNode.removeChild(panel);
       }
     }, 300);
+  },
+
+  /**
+   * 获取反馈类型显示文本
+   */
+  _getFeedbackLabel(type) {
+    const labels = {
+      helpful: '有用',
+      missedPoint: '漏重点',
+      tooVague: '太泛泛',
+      inaccurate: '不准确',
+      toneIssue: '语气差',
+      other: '其他'
+    };
+    return labels[type] || type;
   },
 
   /**

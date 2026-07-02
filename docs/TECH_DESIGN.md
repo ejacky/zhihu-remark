@@ -126,6 +126,10 @@ manifest.json
     │
     ├── [api.js] generateRebuttal()
     │   ├── 构建 System Prompt (prompts.js)
+    │   │   ├── 基础 System Prompt
+    │   │   ├── 动态指令（根据问题类型/回答长度/领域关键词）
+    │   │   ├── Few-shot 示例
+    │   │   └── 用户自定义 Prompt 后缀
     │   ├── 构建 User Prompt (prompts.js)
     │   ├── 截断超长内容
     │   ├── 调用 AI API (fetch)
@@ -133,7 +137,7 @@ manifest.json
     │
     ├── [storage.js] 保存到历史记录
     │
-    └── 返回结果 { analysis, errors, rebuttal, confidence }
+    └── 返回结果 { analysis, errors, rebuttal, confidence, historyId }
     │
     ▼
 [injector.js] 接收响应
@@ -143,7 +147,15 @@ manifest.json
     ├── [ui.js] 显示分析面板
     │   ├── 错误类型标签
     │   ├── 分析摘要
-    │   └── 操作按钮（使用此反驳 / 关闭）
+    │   ├── 生成的反驳预览
+    │   ├── 反馈按钮（👍/👎）
+    │   └── 操作按钮（重新生成 / 使用此反驳 / 关闭）
+    │
+    ├── 用户点击反馈按钮
+    │   └── 发送 UPDATE_FEEDBACK 消息 → [storage.js] 更新历史记录 feedback
+    │
+    ├── 用户点击"重新生成"
+    │   └── [background/index.js] 读取最近反馈 → 构建 regenerateHint → 重新调用 AI
     │
     └── 用户点击"使用此反驳"
         │
@@ -183,11 +195,12 @@ Content Script ↔ Service Worker 通信：
 
 | 消息类型 | 方向 | 参数 | 响应 |
 |----------|------|------|------|
-| GENERATE_REBUTTAL | C→B | `{ content, regenerateHint? }` | `{ success, data/error }` |
+| GENERATE_REBUTTAL | C→B | `{ content, regenerateHint?, style? }` | `{ success, data: { analysis, errors, rebuttal, confidence, historyId }/error }` |
 | GET_CONFIG | C→B / P→B / O→B | - | `{ success, data: config }` |
 | SET_CONFIG | P→B / O→B | `config` | `{ success, data: config }` |
 | GET_HISTORY | P→B / O→B | `{ limit? }` | `{ success, data: history[] }` |
 | CLEAR_HISTORY | O→B | - | `{ success }` |
+| UPDATE_FEEDBACK | C→B | `{ historyId, feedback: { type, reason?, customReason? } }` | `{ success, data: historyItem/error }` |
 | SHOW_NOTIFICATION | B→C | `{ message, type }` | `{ received }` |
 
 ### 4.2 外部 AI API
@@ -307,14 +320,18 @@ interface AIResponse {
     "logicFallacy": true,
     "historicalNihilism": true,
     "dataFraud": true,
-    "scienceError": true
+    "scienceError": true,
+    "argumentIncomplete": true
   },
   "features": {
     "showAnalysis": true,
     "autoFill": true,
     "showSource": true,
-    "enableHistory": true
-  }
+    "enableHistory": true,
+    "enableCompletenessCheck": true
+  },
+  "strictness": "standard",
+  "customPromptSuffix": ""
 }
 ```
 
@@ -329,7 +346,12 @@ interface AIResponse {
   "hasErrors": true,
   "errorTypes": ["factError", "logicFallacy"],
   "rebuttal": "关于地球形状的问题...",
-  "confidence": "high"
+  "confidence": "high",
+  "feedback": {
+    "type": "missedPoint",
+    "reason": "",
+    "timestamp": 1715500100000
+  }
 }
 ```
 
@@ -346,7 +368,7 @@ interface AIResponse {
 ### 6.1 System Prompt 结构
 
 ```
-角色定义 + 任务说明 + 语气要求 + 错误类型指南 + 反驳原则 + 评论写作要求 + 输出格式约束
+角色定义 + 任务说明 + 语气要求 + 错误类型指南 + 动态检查指令 + Few-shot 示例 + 反驳原则 + 评论写作要求 + 输出格式约束 + 用户自定义后缀
 ```
 
 ### 6.2 User Prompt 结构

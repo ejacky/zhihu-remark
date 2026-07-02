@@ -67,6 +67,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       });
       return true;
 
+    case CONSTANTS.MESSAGE_TYPES.UPDATE_FEEDBACK:
+      handleUpdateFeedback(data).then(sendResponse).catch(err => {
+        sendResponse({ success: false, error: err.message });
+      });
+      return true;
+
     default:
       sendResponse({ success: false, error: '未知的消息类型' });
       return false;
@@ -96,12 +102,22 @@ async function handleGenerateRebuttal(data, sender) {
       };
     }
 
+    // 如果没有显式重新生成提示，尝试根据历史反馈构造提示
+    let effectiveRegenerateHint = regenerateHint;
+    if (!effectiveRegenerateHint && content.url) {
+      const latestFeedback = await Storage.getLatestFeedbackByUrl(content.url);
+      if (latestFeedback) {
+        effectiveRegenerateHint = Prompts.buildRegenerateHint(latestFeedback.feedback);
+      }
+    }
+
     // 调用 AI API
-    const result = await API.generateRebuttal(content, config, regenerateHint);
+    const result = await API.generateRebuttal(content, config, effectiveRegenerateHint);
 
     // 保存到历史记录
+    let historyId = null;
     if (config.features?.enableHistory !== false) {
-      await Storage.addHistoryItem({
+      const historyItem = await Storage.addHistoryItem({
         questionTitle: content.title,
         author: content.author,
         url: content.url,
@@ -110,15 +126,52 @@ async function handleGenerateRebuttal(data, sender) {
         rebuttal: result.rebuttal,
         confidence: result.confidence
       });
+      historyId = historyItem.id;
     }
 
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: {
+        ...result,
+        historyId
+      }
+    };
 
   } catch (error) {
     console.error('[知乎反驳助手] 生成反驳失败:', error);
     return {
       success: false,
       error: error.message || '生成反驳时发生未知错误'
+    };
+  }
+}
+
+/**
+ * 处理更新反馈请求
+ */
+async function handleUpdateFeedback(data) {
+  try {
+    const { historyId, feedback } = data;
+
+    if (!historyId) {
+      return { success: false, error: '缺少历史记录 ID' };
+    }
+
+    if (!feedback || !feedback.type) {
+      return { success: false, error: '反馈数据不完整' };
+    }
+
+    const updatedItem = await Storage.updateHistoryFeedback(historyId, {
+      ...feedback,
+      timestamp: Date.now()
+    });
+
+    return { success: true, data: updatedItem };
+  } catch (error) {
+    console.error('[知乎反驳助手] 更新反馈失败:', error);
+    return {
+      success: false,
+      error: error.message || '更新反馈时发生未知错误'
     };
   }
 }

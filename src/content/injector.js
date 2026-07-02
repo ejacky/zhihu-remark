@@ -181,6 +181,8 @@ const Injector = {
       styleResults[defaultStyle] = {
         analysis: response.data.analysis,
         rebuttal: response.data.rebuttal,
+        historyId: response.data.historyId,
+        feedback: null,
         loading: false,
         error: null
       };
@@ -234,6 +236,8 @@ const Injector = {
         styleResults[style] = {
           analysis: response.data.analysis,
           rebuttal: response.data.rebuttal,
+          historyId: response.data.historyId,
+          feedback: null,
           loading: false,
           error: null
         };
@@ -269,6 +273,33 @@ const Injector = {
         if (result && result.rebuttal) {
           await this._fillCommentBox(answerElement, result.rebuttal);
           UI.showSuccess('反驳内容已填入评论框，请审核后发布');
+        }
+      },
+      onFeedback: async (style, feedback) => {
+        const result = styleResults[style];
+        if (!result || !result.historyId) {
+          UI.showWarning('无法记录反馈，请稍后再试');
+          return;
+        }
+
+        try {
+          const response = await this._sendMessage({
+            type: CONSTANTS.MESSAGE_TYPES.UPDATE_FEEDBACK,
+            data: { historyId: result.historyId, feedback }
+          });
+
+          if (response.success) {
+            styleResults[style] = {
+              ...result,
+              feedback
+            };
+            refreshPanel();
+            UI.showSuccess('反馈已记录，下次重新生成将参考您的意见');
+          } else {
+            UI.showError(response.error || '反馈记录失败');
+          }
+        } catch (err) {
+          UI.showError(err.message || '反馈记录失败');
         }
       },
       onDismiss: () => {

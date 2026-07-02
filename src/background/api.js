@@ -52,7 +52,7 @@ const API = {
     const text = Utils.truncateText(content.text, 6000);
     const truncatedContent = { ...content, text };
 
-    const systemPrompt = Prompts.getSystemPrompt(config.style, config);
+    const systemPrompt = Prompts.getSystemPrompt(config.style, config, truncatedContent);
     let userPrompt = text.length > 3000
       ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
       : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
@@ -120,7 +120,7 @@ const API = {
     const text = Utils.truncateText(content.text, 6000);
     const truncatedContent = { ...content, text };
 
-    const systemPrompt = Prompts.getSystemPrompt(config.style, config);
+    const systemPrompt = Prompts.getSystemPrompt(config.style, config, truncatedContent);
     let userPrompt = text.length > 3000
       ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
       : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);

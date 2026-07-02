@@ -283,6 +283,38 @@
         background: #0461d1;
       }
 
+      /* 反馈区 */
+      .zhihu-remark-feedback-area {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-right: auto;
+      }
+      .zhihu-remark-feedback-label {
+        font-size: 12px;
+        color: #8c8c8c;
+      }
+      .zhihu-remark-feedback-btn {
+        padding: 4px 10px;
+        font-size: 12px;
+        color: #595959;
+        background: #f6f6f6;
+        border: 1px solid #e8e8e8;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .zhihu-remark-feedback-btn:hover {
+        background: #e6f0fd;
+        border-color: #bbd6f7;
+        color: #056de8;
+      }
+      .zhihu-remark-feedback-thanks {
+        font-size: 12px;
+        color: #52c41a;
+      }
+
       /* 加载状态 */
       .zhihu-remark-loading {
         position: fixed;

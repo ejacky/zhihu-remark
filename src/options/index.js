@@ -69,6 +69,15 @@
     document.getElementById('feat-autoFill').checked = features.autoFill !== false;
     document.getElementById('feat-showSource').checked = features.showSource !== false;
     document.getElementById('feat-enableHistory').checked = features.enableHistory !== false;
+    document.getElementById('feat-enableCompletenessCheck').checked = features.enableCompletenessCheck !== false;
+
+    // 严格程度
+    const strictness = config.strictness || 'standard';
+    const strictnessRadio = document.querySelector(`input[name="strictness"][value="${strictness}"]`);
+    if (strictnessRadio) strictnessRadio.checked = true;
+
+    // 自定义 Prompt 后缀
+    document.getElementById('customPromptSuffix').value = config.customPromptSuffix || '';
 
     // 历史记录
     loadHistory();
@@ -130,6 +139,8 @@
       model = document.getElementById('model').value;
     }
 
+    const strictness = document.querySelector('input[name="strictness"]:checked')?.value || 'standard';
+
     return {
       provider,
       apiKey: document.getElementById('apiKey').value.trim(),
@@ -138,19 +149,23 @@
       temperature: parseFloat(document.getElementById('temperature').value),
       maxTokens: parseInt(document.getElementById('maxTokens').value),
       style,
+      strictness,
       errorTypes: {
         factError: document.getElementById('err-factError').checked,
         logicFallacy: document.getElementById('err-logicFallacy').checked,
         historicalNihilism: document.getElementById('err-historicalNihilism').checked,
         dataFraud: document.getElementById('err-dataFraud').checked,
-        scienceError: document.getElementById('err-scienceError').checked
+        scienceError: document.getElementById('err-scienceError').checked,
+        argumentIncomplete: document.getElementById('err-argumentIncomplete').checked
       },
       features: {
         showAnalysis: document.getElementById('feat-showAnalysis').checked,
         autoFill: document.getElementById('feat-autoFill').checked,
         showSource: document.getElementById('feat-showSource').checked,
-        enableHistory: document.getElementById('feat-enableHistory').checked
-      }
+        enableHistory: document.getElementById('feat-enableHistory').checked,
+        enableCompletenessCheck: document.getElementById('feat-enableCompletenessCheck').checked
+      },
+      customPromptSuffix: document.getElementById('customPromptSuffix').value.trim()
     };
   }
 
@@ -270,13 +285,17 @@
   // Prompt 预览更新
   function updatePromptPreview() {
     const config = collectFormData();
-    const systemPrompt = Prompts.getSystemPrompt(config.style, config);
-    const userPrompt = Prompts.getUserPrompt({
+    const sampleContent = {
       title: '示例问题：为什么有人认为地球是平的？',
       author: '示例用户',
       text: '地球看起来就是平的，我们站在地面上感觉不到曲率。那些说地球是圆的都是被 NASA 骗了。',
       voteCount: '42'
-    }, Object.entries(config.errorTypes).filter(([_, v]) => v).map(([k]) => k));
+    };
+    const systemPrompt = Prompts.getSystemPrompt(config.style, config, sampleContent);
+    const userPrompt = Prompts.getUserPrompt(
+      sampleContent,
+      Object.entries(config.errorTypes).filter(([_, v]) => v).map(([k]) => k)
+    );
 
     document.getElementById('promptPreview').textContent = systemPrompt;
     document.getElementById('promptUserPreview').textContent = userPrompt;
