@@ -190,17 +190,73 @@
         line-height: 1.6;
         color: #595959;
       }
-      .zhihu-remark-analysis-panel__rebuttal-section {
+      .zhihu-remark-analysis-panel__meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 0 20px 12px;
+      }
+      .zhihu-remark-confidence-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+      .zhihu-remark-confidence-badge--high { background: #f6ffed; color: #389e0d; }
+      .zhihu-remark-confidence-badge--medium { background: #fff7e6; color: #d46b08; }
+      .zhihu-remark-confidence-badge--low { background: #fff1f0; color: #cf1322; }
+      .zhihu-remark-error-count {
+        font-size: 12px;
+        color: #8c8c8c;
+      }
+      .zhihu-remark-error-list {
         margin: 0 20px 16px;
       }
-      .zhihu-remark-analysis-panel__rebuttal-label {
+      .zhihu-remark-error-list__title {
         font-size: 13px;
         font-weight: 600;
         color: #262626;
         margin-bottom: 8px;
       }
+      .zhihu-remark-error-card {
+        padding: 10px 12px;
+        margin-bottom: 8px;
+        background: #fafafa;
+        border: 1px solid #f0f0f0;
+        border-radius: 6px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .zhihu-remark-error-card__type {
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+      }
+      .zhihu-remark-error-card__claim {
+        color: #595959;
+        margin-bottom: 2px;
+      }
+      .zhihu-remark-error-card__correction {
+        color: #389e0d;
+      }
+      .zhihu-remark-analysis-panel__rebuttal-section {
+        margin: 0 20px 16px;
+      }
+      .zhihu-remark-analysis-panel__rebuttal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+      .zhihu-remark-analysis-panel__rebuttal-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #262626;
+      }
       .zhihu-remark-analysis-panel__rebuttal-content {
-        max-height: 200px;
+        max-height: 240px;
         overflow-y: auto;
         padding: 12px 14px;
         background: #f6f6f6;
@@ -211,6 +267,66 @@
         color: #333;
         white-space: pre-wrap;
         word-break: break-word;
+      }
+      .zhihu-remark-copy-btn {
+        padding: 4px 10px;
+        font-size: 12px;
+        color: #056de8;
+        background: #fff;
+        border: 1px solid #056de8;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-copy-btn:hover {
+        background: #e6f0fd;
+      }
+      .zhihu-remark-custom-hint-section {
+        margin-top: 12px;
+      }
+      .zhihu-remark-custom-hint-toggle {
+        padding: 6px 12px;
+        font-size: 12px;
+        color: #056de8;
+        background: #fff;
+        border: 1px dashed #91caff;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-custom-hint-toggle:hover {
+        background: #e6f0fd;
+        border-style: solid;
+      }
+      .zhihu-remark-custom-hint-textarea {
+        display: none;
+        width: 100%;
+        min-height: 72px;
+        margin-top: 8px;
+        padding: 10px 12px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #262626;
+        background: #fff;
+        border: 1px solid #d9d9d9;
+        border-radius: 8px;
+        resize: vertical;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-custom-hint-textarea:focus {
+        outline: none;
+        border-color: #056de8;
+        box-shadow: 0 0 0 2px rgba(5, 109, 232, 0.15);
+      }
+      .zhihu-remark-custom-hint-section--expanded .zhihu-remark-custom-hint-textarea {
+        display: block;
+      }
+      .zhihu-remark-last-hint-tip {
+        padding: 0 20px 12px;
+        font-size: 12px;
+        color: #389e0d;
       }
       .zhihu-remark-analysis-panel__actions {
         padding: 12px 20px 20px;

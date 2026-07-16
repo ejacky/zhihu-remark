@@ -1,6 +1,8 @@
 /**
  * 知乎反驳助手 - UI 组件
  * 负责浮动提示、通知、加载状态等界面元素
+ * @doc docs/TECH_DESIGN.md#内容脚本
+ * @doc docs/USER_GUIDE.md#生成反驳
  */
 
 const UI = {
@@ -87,6 +89,9 @@ const UI = {
       className: 'zhihu-remark-analysis-panel'
     });
 
+    // 各风格独立的自定义要求缓存
+    const styleCustomHints = {};
+
     // ===== 标题栏 =====
     const header = Utils.createElement('div', {
       className: 'zhihu-remark-analysis-panel__header'
@@ -99,10 +104,7 @@ const UI = {
     const closeBtn = Utils.createElement('button', {
       className: 'zhihu-remark-analysis-panel__close',
       textContent: '✕',
-      onClick: () => {
-        this._removePanel(panel);
-        if (onDismiss) onDismiss();
-      }
+      onClick: () => closePanel()
     });
     header.appendChild(closeBtn);
     panel.appendChild(header);
@@ -145,6 +147,29 @@ const UI = {
     requestAnimationFrame(() => {
       panel.classList.add('zhihu-remark-analysis-panel--visible');
     });
+
+    // 统一关闭面板并清理事件
+    const closePanel = () => {
+      UI._removePanel(panel);
+      document.removeEventListener('mousedown', outsideClickHandler);
+      document.removeEventListener('keydown', escHandler);
+      if (onDismiss) onDismiss();
+    };
+
+    function outsideClickHandler(e) {
+      if (!panel.contains(e.target)) {
+        closePanel();
+      }
+    }
+
+    function escHandler(e) {
+      if (e.key === 'Escape') {
+        closePanel();
+      }
+    }
+
+    document.addEventListener('mousedown', outsideClickHandler);
+    document.addEventListener('keydown', escHandler);
 
     // ---- 渲染/更新内容的方法 ----
     function renderContent() {
@@ -218,7 +243,7 @@ const UI = {
         });
         actionsArea.appendChild(retryBtn);
       } else {
-        // 有数据：显示错误标签、摘要、反驳预览
+        // 有数据：显示错误标签、摘要、错误详情、反驳预览
         const { analysis, rebuttal } = result;
 
         // 错误类型标签
@@ -237,6 +262,61 @@ const UI = {
         });
         contentArea.appendChild(tagsContainer);
 
+        // 置信度与错误数量
+        const metaRow = Utils.createElement('div', {
+          className: 'zhihu-remark-analysis-panel__meta'
+        });
+        if (result.confidence) {
+          const confidenceBadge = Utils.createElement('span', {
+            className: `zhihu-remark-confidence-badge zhihu-remark-confidence-badge--${result.confidence}`,
+            textContent: `置信度：${UI._getConfidenceLabel(result.confidence)}`
+          });
+          metaRow.appendChild(confidenceBadge);
+        }
+        if (result.errors?.length) {
+          const countBadge = Utils.createElement('span', {
+            className: 'zhihu-remark-error-count',
+            textContent: `${result.errors.length} 处错误`
+          });
+          metaRow.appendChild(countBadge);
+        }
+        contentArea.appendChild(metaRow);
+
+        // 错误详情
+        if (result.errors?.length) {
+          const errorList = Utils.createElement('div', {
+            className: 'zhihu-remark-error-list'
+          });
+          const errorListTitle = Utils.createElement('div', {
+            className: 'zhihu-remark-error-list__title',
+            textContent: '错误详情'
+          });
+          errorList.appendChild(errorListTitle);
+          result.errors.forEach(err => {
+            const typeInfo = CONSTANTS.ERROR_TYPES[err.type];
+            const card = Utils.createElement('div', {
+              className: 'zhihu-remark-error-card'
+            });
+            const cardType = Utils.createElement('div', {
+              className: 'zhihu-remark-error-card__type',
+              textContent: `${typeInfo?.icon || '•'} ${typeInfo?.label || err.type || '未知类型'}`
+            });
+            const cardClaim = Utils.createElement('div', {
+              className: 'zhihu-remark-error-card__claim',
+              textContent: `原文：${err.originalClaim || ''}`
+            });
+            const cardCorrection = Utils.createElement('div', {
+              className: 'zhihu-remark-error-card__correction',
+              textContent: `纠正：${err.correction || ''}`
+            });
+            card.appendChild(cardType);
+            card.appendChild(cardClaim);
+            card.appendChild(cardCorrection);
+            errorList.appendChild(card);
+          });
+          contentArea.appendChild(errorList);
+        }
+
         // 摘要
         const summaryEl = Utils.createElement('div', {
           className: 'zhihu-remark-analysis-panel__summary',
@@ -249,17 +329,83 @@ const UI = {
           const rebuttalSection = Utils.createElement('div', {
             className: 'zhihu-remark-analysis-panel__rebuttal-section'
           });
+          const rebuttalHeader = Utils.createElement('div', {
+            className: 'zhihu-remark-analysis-panel__rebuttal-header'
+          });
           const rebuttalLabel = Utils.createElement('div', {
             className: 'zhihu-remark-analysis-panel__rebuttal-label',
             textContent: '📝 生成的反驳'
           });
-          rebuttalSection.appendChild(rebuttalLabel);
+          const copyBtn = Utils.createElement('button', {
+            className: 'zhihu-remark-copy-btn',
+            textContent: '📋 复制',
+            onClick: async () => {
+              const ok = await Utils.copyToClipboard(rebuttal);
+              copyBtn.textContent = ok ? '✅ 已复制' : '❌ 复制失败';
+              setTimeout(() => { copyBtn.textContent = '📋 复制'; }, 1500);
+            }
+          });
+          rebuttalHeader.appendChild(rebuttalLabel);
+          rebuttalHeader.appendChild(copyBtn);
+          rebuttalSection.appendChild(rebuttalHeader);
           const rebuttalContent = Utils.createElement('div', {
             className: 'zhihu-remark-analysis-panel__rebuttal-content',
             textContent: rebuttal
           });
           rebuttalSection.appendChild(rebuttalContent);
+
+          // 自定义要求输入区（可折叠）
+          const hintKey = `hint-${currentStyle}`;
+          const customHintId = `zhihu-remark-custom-hint-${currentStyle}`;
+          const isExpanded = styleCustomHints[hintKey] !== undefined;
+          const currentHint = styleCustomHints[hintKey] || '';
+
+          const customHintSection = Utils.createElement('div', {
+            className: 'zhihu-remark-custom-hint-section'
+          });
+
+          const toggleBtn = Utils.createElement('button', {
+            className: 'zhihu-remark-custom-hint-toggle',
+            textContent: isExpanded ? '收起要求 ▲' : '✏️ 添加自定义要求'
+          });
+
+          const textarea = Utils.createElement('textarea', {
+            id: customHintId,
+            className: 'zhihu-remark-custom-hint-textarea',
+            placeholder: '例如：请更简短一些；重点反驳数据造假部分；语气再温和一点……',
+            value: currentHint
+          });
+
+          toggleBtn.addEventListener('click', () => {
+            const expanded = customHintSection.classList.toggle('zhihu-remark-custom-hint-section--expanded');
+            toggleBtn.textContent = expanded ? '收起要求 ▲' : '✏️ 添加自定义要求';
+            if (expanded) {
+              setTimeout(() => textarea.focus(), 50);
+            }
+          });
+
+          textarea.addEventListener('input', (e) => {
+            styleCustomHints[hintKey] = e.target.value;
+          });
+
+          customHintSection.appendChild(toggleBtn);
+          customHintSection.appendChild(textarea);
+
+          if (isExpanded) {
+            customHintSection.classList.add('zhihu-remark-custom-hint-section--expanded');
+          }
+
+          rebuttalSection.appendChild(customHintSection);
           contentArea.appendChild(rebuttalSection);
+        }
+
+        // 上次使用的自定义要求提示
+        if (result.lastCustomHint) {
+          const lastHintTip = Utils.createElement('div', {
+            className: 'zhihu-remark-last-hint-tip',
+            textContent: `✅ 已按“${result.lastCustomHint}”重新生成`
+          });
+          contentArea.appendChild(lastHintTip);
         }
 
         // 反馈区
@@ -269,7 +415,7 @@ const UI = {
         if (result.feedback) {
           const feedbackThanks = Utils.createElement('div', {
             className: 'zhihu-remark-feedback-thanks',
-            textContent: `✅ 已收到反馈：${this._getFeedbackLabel(result.feedback.type)}`
+            textContent: `✅ 已收到反馈：${UI._getFeedbackLabel(result.feedback.type)}`
           });
           feedbackArea.appendChild(feedbackThanks);
         } else {
@@ -309,7 +455,8 @@ const UI = {
           onClick: () => {
             regenerateBtn.disabled = true;
             regenerateBtn.textContent = '生成中...';
-            if (onRegenerate) onRegenerate(currentStyle);
+            const customHint = styleCustomHints[`hint-${currentStyle}`]?.trim() || '';
+            if (onRegenerate) onRegenerate(currentStyle, customHint);
           }
         });
         actionsArea.appendChild(regenerateBtn);
@@ -319,7 +466,7 @@ const UI = {
           textContent: '使用此反驳',
           onClick: () => {
             if (onUse) onUse(currentStyle);
-            UI._removePanel(panel);
+            closePanel();
           }
         });
         actionsArea.appendChild(useBtn);
@@ -337,7 +484,7 @@ const UI = {
         renderContent();
       },
       remove() {
-        this._removePanel(panel);
+        closePanel();
       }
     };
   },
@@ -409,6 +556,18 @@ const UI = {
       other: '其他'
     };
     return labels[type] || type;
+  },
+
+  /**
+   * 获取置信度显示文本
+   */
+  _getConfidenceLabel(confidence) {
+    const labels = {
+      high: '高',
+      medium: '中',
+      low: '低'
+    };
+    return labels[confidence] || confidence;
   },
 
   /**

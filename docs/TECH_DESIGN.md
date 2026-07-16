@@ -146,16 +146,22 @@ manifest.json
     │
     ├── [ui.js] 显示分析面板
     │   ├── 错误类型标签
+    │   ├── 置信度标识
+    │   ├── 错误详情卡片（原文 / 纠正）
     │   ├── 分析摘要
-    │   ├── 生成的反驳预览
-    │   ├── 反馈按钮（👍/👎）
-    │   └── 操作按钮（重新生成 / 使用此反驳 / 关闭）
+    │   ├── 生成的反驳预览（支持复制）
+    │   ├── 反馈按钮（有用 / 漏重点 / 太泛泛 / 不准确 / 语气差）
+    │   ├── 操作按钮（重新生成 / 使用此反驳 / 关闭）
+    │   └── 交互：点击面板外区域或按 Esc 关闭面板
     │
     ├── 用户点击反馈按钮
     │   └── 发送 UPDATE_FEEDBACK 消息 → [storage.js] 更新历史记录 feedback
     │
     ├── 用户点击"重新生成"
-    │   └── [background/index.js] 读取最近反馈 → 构建 regenerateHint → 重新调用 AI
+    │   ├── 读取面板中的自定义要求（customHint）
+    │   ├── 将固定 regenerateHint 与 customHint 拼接
+    │   └── 发送 GENERATE_REBUTTAL 消息 → [background/index.js] 调用 AI
+    │       （后台也会读取最近反馈构建 regenerateHint，作为 fallback）
     │
     └── 用户点击"使用此反驳"
         │

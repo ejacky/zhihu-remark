@@ -218,15 +218,21 @@ const Injector = {
       }
     };
 
-    const generateForStyle = async (style, isRegenerate) => {
+    const generateForStyle = async (style, isRegenerate, customHint = '') => {
       // 标记该风格为加载中
       styleResults[style] = { analysis: null, rebuttal: '', loading: true, error: null };
       refreshPanel();
 
       try {
-        const regenerateHint = isRegenerate
+        let regenerateHint = isRegenerate
           ? '（这是重新生成请求。请换一个角度、换一种表达方式重新生成反驳内容，避免与之前的版本雷同。）'
           : undefined;
+
+        if (customHint) {
+          const customHintText = `此外，用户针对本次重新生成提出了以下要求，请重点满足：${customHint}`;
+          regenerateHint = regenerateHint ? `${regenerateHint}\n\n${customHintText}` : customHintText;
+        }
+
         const response = await this._sendGenerateMessage(content, style, regenerateHint);
 
         if (!response.success) {
@@ -239,7 +245,8 @@ const Injector = {
           historyId: response.data.historyId,
           feedback: null,
           loading: false,
-          error: null
+          error: null,
+          lastCustomHint: customHint || null
         };
       } catch (error) {
         styleResults[style] = {
@@ -265,8 +272,8 @@ const Injector = {
           refreshPanel();
         }
       },
-      onRegenerate: (style) => {
-        generateForStyle(style, true);
+      onRegenerate: (style, customHint) => {
+        generateForStyle(style, true, customHint);
       },
       onUse: async (style) => {
         const result = styleResults[style];
