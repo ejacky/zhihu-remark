@@ -198,6 +198,7 @@
       .zhihu-remark-tag--historicalNihilism { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
       .zhihu-remark-tag--dataFraud { background: #e6f7ff; color: #096dd9; border: 1px solid #91d5ff; }
       .zhihu-remark-tag--scienceError { background: #f9f0ff; color: #531dab; border: 1px solid #d3adf7; }
+      .zhihu-remark-tag--argumentIncomplete { background: #e6fffb; color: #006d75; border: 1px solid #87e8de; }
       .zhihu-remark-analysis-panel__summary {
         padding: 0 20px 16px;
         font-size: 14px;
@@ -327,6 +328,7 @@
         border: 1px solid #d9d9d9;
         border-radius: 8px;
         resize: vertical;
+        box-sizing: border-box;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       .zhihu-remark-custom-hint-textarea:focus {
@@ -392,6 +394,7 @@
         border: 1px solid #d9d9d9;
         border-radius: 6px;
         resize: vertical;
+        box-sizing: border-box;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       .zhihu-remark-intent-editor:focus {
@@ -406,10 +409,11 @@
         display: none;
       }
       .zhihu-remark-analysis-panel__actions {
-        padding: 12px 20px 20px;
+        padding: 16px 20px 20px;
         display: flex;
         justify-content: flex-end;
-        gap: 8px;
+        gap: 12px;
+        border-top: 1px solid #f0f0f0;
       }
       .zhihu-remark-style-tabs {
         display: flex;
@@ -461,19 +465,58 @@
         font-size: 12px;
         color: #bfbfbf;
       }
+      .zhihu-remark-btn--secondary {
+        all: initial;
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #595959;
+        background: #fff;
+        border: 1px solid #d9d9d9;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-btn--secondary:hover {
+        color: #056de8;
+        border-color: #056de8;
+        background: #e6f0fd;
+      }
+      .zhihu-remark-btn--secondary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
       .zhihu-remark-btn--primary {
-        padding: 8px 20px;
+        all: initial;
+        display: inline-flex !important;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
         font-size: 14px;
         font-weight: 500;
         color: #fff;
         background: #056de8;
-        border: none;
-        border-radius: 6px;
+        border: 1px solid #056de8;
+        border-radius: 8px;
         cursor: pointer;
-        transition: background 0.2s;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        box-shadow: 0 2px 6px rgba(5, 109, 232, 0.25);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       .zhihu-remark-btn--primary:hover {
         background: #0461d1;
+        border-color: #0461d1;
+        box-shadow: 0 4px 10px rgba(5, 109, 232, 0.35);
+      }
+      .zhihu-remark-btn--primary:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
       }
 
       /* 反馈区 */
