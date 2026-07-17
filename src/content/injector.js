@@ -7,6 +7,9 @@ const Injector = {
   // 已注入按钮的元素集合
   _injectedElements: new WeakSet(),
 
+  // 已关闭面板的状态缓存（按回答内容标识）
+  _panelCache: new Map(),
+
   /**
    * 扫描并注入按钮到所有回答的评论区域
    */
@@ -129,6 +132,16 @@ const Injector = {
   },
 
   /**
+   * 获取回答的稳定标识（用于缓存面板状态）
+   */
+  _getAnswerId(content) {
+    const url = content.url || window.location.href;
+    const author = content.author || '';
+    const textPreview = (content.text || '').slice(0, 300).replace(/\s+/g, ' ').trim();
+    return `${url}|${author}|${textPreview}`;
+  },
+
+  /**
    * 处理生成按钮点击
    */
   async _handleGenerateClick(button, answerElement) {
@@ -139,6 +152,15 @@ const Injector = {
       const content = Extractor.extractFromElement(answerElement);
       if (!content.text || content.text.length < 30) {
         throw new Error('未能提取到有效的回答内容，请尝试刷新页面');
+      }
+
+      const answerId = this._getAnswerId(content);
+      const cachedState = this._panelCache.get(answerId);
+
+      if (cachedState) {
+        // 有缓存：直接恢复面板，不重新生成
+        this._openAnalysisPanel(content, answerElement, cachedState.styleResults, cachedState.currentStyle, cachedState.panelState);
+        return;
       }
 
       button.disabled = true;
@@ -209,8 +231,19 @@ const Injector = {
   /**
    * 打开/管理分析面板（支持多风格切换）
    */
-  _openAnalysisPanel(content, answerElement, styleResults, currentStyle) {
+  _openAnalysisPanel(content, answerElement, styleResults, currentStyle, initialPanelState = null) {
     let panelCtrl = null;
+    const answerId = this._getAnswerId(content);
+
+    const savePanelState = () => {
+      if (panelCtrl) {
+        this._panelCache.set(answerId, {
+          styleResults: { ...styleResults },
+          currentStyle,
+          panelState: panelCtrl.getState()
+        });
+      }
+    };
 
     const refreshPanel = () => {
       if (panelCtrl) {
@@ -263,6 +296,7 @@ const Injector = {
     panelCtrl = UI.createAnalysisPanel({
       styleResults,
       currentStyle,
+      initialState: initialPanelState,
       onStyleChange: (style) => {
         currentStyle = style;
         if (!styleResults[style]) {
@@ -281,6 +315,8 @@ const Injector = {
           await this._fillCommentBox(answerElement, result.rebuttal);
           UI.showSuccess('反驳内容已填入评论框，请审核后发布');
         }
+        // 使用后清除缓存，避免下次打开时仍显示旧结果
+        this._panelCache.delete(answerId);
       },
       onFeedback: async (style, feedback) => {
         const result = styleResults[style];
@@ -310,6 +346,7 @@ const Injector = {
         }
       },
       onDismiss: () => {
+        savePanelState();
         panelCtrl = null;
       }
     });

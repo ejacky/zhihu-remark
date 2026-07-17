@@ -84,13 +84,15 @@ const UI = {
    * @param {Function} options.onDismiss - 关闭面板回调
    * @returns {Object} { element, update, remove }
    */
-  createAnalysisPanel({ styleResults, currentStyle, onStyleChange, onRegenerate, onUse, onFeedback, onDismiss }) {
+  createAnalysisPanel({ styleResults, currentStyle, onStyleChange, onRegenerate, onUse, onFeedback, onDismiss, initialState }) {
     const panel = Utils.createElement('div', {
       className: 'zhihu-remark-analysis-panel'
     });
 
-    // 各风格独立的自定义要求缓存
-    const styleCustomHints = {};
+    // 各风格独立的自定义要求缓存与历史
+    const styleCustomHints = initialState?.styleCustomHints || {};
+    const customHintHistory = initialState?.customHintHistory || {};
+    const coreIntents = initialState?.coreIntents || {};
 
     // ===== 标题栏 =====
     const header = Utils.createElement('div', {
@@ -108,6 +110,38 @@ const UI = {
     });
     header.appendChild(closeBtn);
     panel.appendChild(header);
+
+    // 拖动状态
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+
+    header.addEventListener('mousedown', (e) => {
+      // 只有点击标题栏空白处或文字时才拖动，不响应关闭按钮
+      if (e.target === closeBtn) return;
+      isDragging = true;
+      const rect = panel.getBoundingClientRect();
+      dragOffsetX = e.clientX - rect.left;
+      dragOffsetY = e.clientY - rect.top;
+      panel.classList.add('zhihu-remark-analysis-panel--dragging');
+      e.preventDefault();
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      if (!isDragging) return;
+      const x = e.clientX - dragOffsetX;
+      const y = e.clientY - dragOffsetY;
+      panel.style.transform = 'none';
+      panel.style.left = `${x}px`;
+      panel.style.top = `${y}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (isDragging) {
+        isDragging = false;
+        panel.classList.remove('zhihu-remark-analysis-panel--dragging');
+      }
+    });
 
     // ===== 风格选项卡 =====
     const tabsContainer = Utils.createElement('div', {
@@ -148,27 +182,18 @@ const UI = {
       panel.classList.add('zhihu-remark-analysis-panel--visible');
     });
 
-    // 统一关闭面板并清理事件
+    // 统一关闭面板
     const closePanel = () => {
       UI._removePanel(panel);
-      document.removeEventListener('mousedown', outsideClickHandler);
       document.removeEventListener('keydown', escHandler);
       if (onDismiss) onDismiss();
     };
-
-    function outsideClickHandler(e) {
-      if (!panel.contains(e.target)) {
-        closePanel();
-      }
-    }
 
     function escHandler(e) {
       if (e.key === 'Escape') {
         closePanel();
       }
     }
-
-    document.addEventListener('mousedown', outsideClickHandler);
     document.addEventListener('keydown', escHandler);
 
     // ---- 渲染/更新内容的方法 ----
@@ -356,6 +381,8 @@ const UI = {
 
           // 自定义要求输入区（可折叠）
           const hintKey = `hint-${currentStyle}`;
+          const historyKey = `history-${currentStyle}`;
+          const intentKey = `intent-${currentStyle}`;
           const customHintId = `zhihu-remark-custom-hint-${currentStyle}`;
           const isExpanded = styleCustomHints[hintKey] !== undefined;
           const currentHint = styleCustomHints[hintKey] || '';
@@ -396,6 +423,63 @@ const UI = {
           }
 
           rebuttalSection.appendChild(customHintSection);
+
+          // 核心意图摘要展示与编辑
+          const history = customHintHistory[historyKey] || [];
+          const currentIntent = coreIntents[intentKey];
+          if (history.length > 0 || currentIntent) {
+            const intentSection = Utils.createElement('div', {
+              className: 'zhihu-remark-intent-section'
+            });
+
+            const intentHeader = Utils.createElement('div', {
+              className: 'zhihu-remark-intent-header'
+            });
+            const intentTitle = Utils.createElement('span', {
+              className: 'zhihu-remark-intent-title',
+              textContent: '💡 我理解你的要求'
+            });
+            const intentEditBtn = Utils.createElement('button', {
+              className: 'zhihu-remark-intent-edit-btn',
+              textContent: '修改'
+            });
+            intentHeader.appendChild(intentTitle);
+            intentHeader.appendChild(intentEditBtn);
+            intentSection.appendChild(intentHeader);
+
+            const intentText = currentIntent
+              ? currentIntent.text
+              : UI._deriveCoreIntent(history).text;
+            const intentBody = Utils.createElement('div', {
+              className: 'zhihu-remark-intent-body',
+              textContent: intentText
+            });
+            intentSection.appendChild(intentBody);
+
+            const intentEditor = Utils.createElement('textarea', {
+              className: 'zhihu-remark-intent-editor',
+              value: intentText
+            });
+            intentEditor.addEventListener('input', (e) => {
+              coreIntents[intentKey] = { text: e.target.value, manual: true };
+            });
+            intentSection.appendChild(intentEditor);
+
+            intentEditBtn.addEventListener('click', () => {
+              const editing = intentSection.classList.toggle('zhihu-remark-intent-section--editing');
+              intentEditBtn.textContent = editing ? '保存' : '修改';
+              if (editing) {
+                intentEditor.value = coreIntents[intentKey]?.text || UI._deriveCoreIntent(history).text;
+                setTimeout(() => intentEditor.focus(), 50);
+              } else {
+                coreIntents[intentKey] = { text: intentEditor.value.trim() || intentText, manual: true };
+                intentBody.textContent = coreIntents[intentKey].text;
+              }
+            });
+
+            rebuttalSection.appendChild(intentSection);
+          }
+
           contentArea.appendChild(rebuttalSection);
         }
 
@@ -455,8 +539,28 @@ const UI = {
           onClick: () => {
             regenerateBtn.disabled = true;
             regenerateBtn.textContent = '生成中...';
-            const customHint = styleCustomHints[`hint-${currentStyle}`]?.trim() || '';
-            if (onRegenerate) onRegenerate(currentStyle, customHint);
+
+            const rawHint = styleCustomHints[`hint-${currentStyle}`]?.trim() || '';
+            const historyKey = `history-${currentStyle}`;
+            const intentKey = `intent-${currentStyle}`;
+
+            if (rawHint) {
+              customHintHistory[historyKey] = [...(customHintHistory[historyKey] || []), { text: rawHint, timestamp: Date.now() }].slice(-5);
+            }
+
+            const history = customHintHistory[historyKey] || [];
+            const manualIntent = coreIntents[intentKey];
+            let finalHint = '';
+
+            if (manualIntent) {
+              finalHint = manualIntent.text;
+            } else if (history.length > 0) {
+              finalHint = UI._deriveCoreIntent(history).text;
+            } else {
+              finalHint = rawHint;
+            }
+
+            if (onRegenerate) onRegenerate(currentStyle, finalHint.trim());
           }
         });
         actionsArea.appendChild(regenerateBtn);
@@ -485,6 +589,15 @@ const UI = {
       },
       remove() {
         closePanel();
+      },
+      getState() {
+        return {
+          styleResults: { ...styleResults },
+          currentStyle,
+          styleCustomHints: { ...styleCustomHints },
+          customHintHistory: { ...customHintHistory },
+          coreIntents: { ...coreIntents }
+        };
       }
     };
   },
@@ -568,6 +681,120 @@ const UI = {
       low: '低'
     };
     return labels[confidence] || confidence;
+  },
+
+  /**
+   * 从自定义要求历史中归纳核心意图
+   * @param {Array<{text: string, timestamp: number}>} hints
+   * @returns {{text: string, tags: string[]}}
+   */
+  _deriveCoreIntent(hints) {
+    if (!hints || hints.length === 0) {
+      return { text: '', tags: [] };
+    }
+
+    const rules = [
+      // 结构类（优先级较高，因为结构要求通常更明确）
+      {
+        tag: 'structured',
+        keywords: ['分点', '列出来', '123', '1 2 3', '逐条', '条目'],
+        label: '分点陈述'
+      },
+      {
+        tag: 'paragraph',
+        keywords: ['不要分点', '连起来', '一段话', '一段', '写成一段'],
+        label: '写成一段'
+      },
+
+      // 语气/风格类
+      {
+        tag: 'concise',
+        keywords: ['简短', '简短点', '短一点', '精简', '短一些', '简短些', '少点', '字数少'],
+        label: '简短'
+      },
+      {
+        tag: 'detailed',
+        keywords: ['详细', '详细点', '详细一些', '具体', '具体点', '多说', '多写', '丰富'],
+        label: '详细'
+      },
+      {
+        tag: 'natural',
+        keywords: ['自然', '像真人', '口语化', '不要 ai 味', '不要AI味', '像人写的', '像网友', '像评论', '真人', '随意'],
+        label: '自然、像真人'
+      },
+      {
+        tag: 'gentle',
+        keywords: ['温和', '委婉', '客气', '友善', '不要攻击性', '别攻击性', '柔和', '平和'],
+        label: '温和'
+      },
+      {
+        tag: 'direct',
+        keywords: ['犀利', '直接', '有力', '强硬', '尖锐', '一针见血', '直击要害'],
+        label: '直接犀利'
+      },
+      {
+        tag: 'academic',
+        keywords: ['学术', '严谨', '引用', '专业', '术语', '规范'],
+        label: '学术严谨'
+      },
+
+      // 内容侧重类
+      {
+        tag: 'focus',
+        keywords: ['重点反驳', '重点说', '多说说', '抓住', '聚焦', '围绕', '主要反驳'],
+        label: '重点反驳'
+      },
+      {
+        tag: 'avoid',
+        keywords: ['不要提', '跳过', '别提', '避免', '不要围绕', '不要重点'],
+        label: '避免涉及'
+      }
+    ];
+
+    const matchedTags = new Set();
+    const matchedLabels = [];
+
+    // 从最近一条开始扫描，后出现的同类别要求覆盖前面的
+    for (let i = hints.length - 1; i >= 0; i--) {
+      const text = hints[i].text.toLowerCase();
+      for (const rule of rules) {
+        if (rule.keywords.some(kw => text.includes(kw.toLowerCase()))) {
+          if (!matchedTags.has(rule.tag)) {
+            matchedTags.add(rule.tag);
+            matchedLabels.push(rule.label);
+          }
+        }
+      }
+    }
+
+    // 处理冲突：concise 与 detailed 同时存在时，以最近一条为准
+    const orderedTags = Array.from(matchedTags);
+    const hasConcise = orderedTags.includes('concise');
+    const hasDetailed = orderedTags.includes('detailed');
+    const lastHint = hints[hints.length - 1].text.toLowerCase();
+    if (hasConcise && hasDetailed) {
+      const conciseIndex = lastHint.search(/简短|精简|短一点|字数少/);
+      const detailedIndex = lastHint.search(/详细|具体|多说|多写|丰富/);
+      if (conciseIndex >= 0 && (detailedIndex < 0 || conciseIndex < detailedIndex)) {
+        orderedTags.splice(orderedTags.indexOf('detailed'), 1);
+      } else if (detailedIndex >= 0) {
+        orderedTags.splice(orderedTags.indexOf('concise'), 1);
+      }
+    }
+
+    // 生成自然语言摘要
+    const labels = rules
+      .filter(rule => orderedTags.includes(rule.tag))
+      .map(rule => rule.label);
+
+    if (labels.length === 0) {
+      // 没有命中规则时，直接拼接最近的 2 条原始输入
+      const recentHints = hints.slice(-2).map(h => h.text).join('；');
+      return { text: `请根据以下要求重新生成反驳：${recentHints}。`, tags: [] };
+    }
+
+    const text = `请重新生成反驳，要求：${labels.join('、')}。请综合满足这些要求。`;
+    return { text, tags: orderedTags };
   },
 
   /**

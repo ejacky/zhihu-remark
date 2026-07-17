@@ -135,11 +135,21 @@
         box-shadow: 0 8px 32px rgba(0,0,0,0.2);
         transform: translate(-50%, -50%) scale(0.9);
         opacity: 0;
-        transition: all 0.3s ease;
+        transition: opacity 0.3s ease, transform 0.3s ease;
+        cursor: default;
+        user-select: none;
       }
       .zhihu-remark-analysis-panel--visible {
         transform: translate(-50%, -50%) scale(1);
         opacity: 1;
+      }
+      .zhihu-remark-analysis-panel--dragging {
+        transition: none;
+        cursor: move;
+      }
+      .zhihu-remark-analysis-panel__content,
+      .zhihu-remark-analysis-panel__actions {
+        user-select: text;
       }
       .zhihu-remark-analysis-panel__header {
         display: flex;
@@ -147,6 +157,10 @@
         align-items: center;
         padding: 16px 20px;
         border-bottom: 1px solid #f0f0f0;
+        cursor: grab;
+      }
+      .zhihu-remark-analysis-panel--dragging .zhihu-remark-analysis-panel__header {
+        cursor: grabbing;
       }
       .zhihu-remark-analysis-panel__title {
         margin: 0;
@@ -327,6 +341,69 @@
         padding: 0 20px 12px;
         font-size: 12px;
         color: #389e0d;
+      }
+      .zhihu-remark-intent-section {
+        margin-top: 12px;
+        padding: 10px 12px;
+        background: #f0f9ff;
+        border: 1px solid #bae0ff;
+        border-radius: 8px;
+      }
+      .zhihu-remark-intent-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+      }
+      .zhihu-remark-intent-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: #0958d9;
+      }
+      .zhihu-remark-intent-edit-btn {
+        padding: 2px 8px;
+        font-size: 12px;
+        color: #056de8;
+        background: #fff;
+        border: 1px solid #056de8;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-intent-edit-btn:hover {
+        background: #e6f0fd;
+      }
+      .zhihu-remark-intent-body {
+        font-size: 13px;
+        line-height: 1.5;
+        color: #262626;
+      }
+      .zhihu-remark-intent-editor {
+        display: none;
+        width: 100%;
+        min-height: 72px;
+        margin-top: 6px;
+        padding: 8px 10px;
+        font-size: 13px;
+        line-height: 1.5;
+        color: #262626;
+        background: #fff;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        resize: vertical;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-intent-editor:focus {
+        outline: none;
+        border-color: #056de8;
+        box-shadow: 0 0 0 2px rgba(5, 109, 232, 0.15);
+      }
+      .zhihu-remark-intent-section--editing .zhihu-remark-intent-editor {
+        display: block;
+      }
+      .zhihu-remark-intent-section--editing .zhihu-remark-intent-body {
+        display: none;
       }
       .zhihu-remark-analysis-panel__actions {
         padding: 12px 20px 20px;
