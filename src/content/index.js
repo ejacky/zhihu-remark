@@ -297,10 +297,10 @@
       .zhihu-remark-copy-btn:hover {
         background: #e6f0fd;
       }
-      .zhihu-remark-custom-hint-section {
+      .zhihu-remark-optimization-section {
         margin-top: 12px;
       }
-      .zhihu-remark-custom-hint-toggle {
+      .zhihu-remark-optimization-toggle {
         padding: 6px 12px;
         font-size: 12px;
         color: #056de8;
@@ -311,15 +311,20 @@
         transition: all 0.2s;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
-      .zhihu-remark-custom-hint-toggle:hover {
+      .zhihu-remark-optimization-toggle:hover {
         background: #e6f0fd;
         border-style: solid;
       }
-      .zhihu-remark-custom-hint-textarea {
+      .zhihu-remark-optimization-content {
         display: none;
+        margin-top: 8px;
+      }
+      .zhihu-remark-optimization-section--expanded .zhihu-remark-optimization-content {
+        display: block;
+      }
+      .zhihu-remark-custom-hint-textarea {
         width: 100%;
         min-height: 72px;
-        margin-top: 8px;
         padding: 10px 12px;
         font-size: 13px;
         line-height: 1.5;
@@ -335,9 +340,6 @@
         outline: none;
         border-color: #056de8;
         box-shadow: 0 0 0 2px rgba(5, 109, 232, 0.15);
-      }
-      .zhihu-remark-custom-hint-section--expanded .zhihu-remark-custom-hint-textarea {
-        display: block;
       }
       .zhihu-remark-last-hint-tip {
         padding: 0 20px 12px;
@@ -411,6 +413,7 @@
       .zhihu-remark-analysis-panel__actions {
         padding: 16px 20px 20px;
         display: flex;
+        align-items: center;
         justify-content: flex-end;
         gap: 12px;
         border-top: 1px solid #f0f0f0;
@@ -519,19 +522,14 @@
         cursor: not-allowed;
       }
 
-      /* 反馈区 */
-      .zhihu-remark-feedback-area {
+      /* 反馈 */
+      .zhihu-remark-feedback-chips {
         display: flex;
-        align-items: center;
         flex-wrap: wrap;
         gap: 8px;
-        margin-right: auto;
+        margin-top: 10px;
       }
-      .zhihu-remark-feedback-label {
-        font-size: 12px;
-        color: #8c8c8c;
-      }
-      .zhihu-remark-feedback-btn {
+      .zhihu-remark-feedback-chip {
         padding: 4px 10px;
         font-size: 12px;
         color: #595959;
@@ -540,8 +538,30 @@
         border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
-      .zhihu-remark-feedback-btn:hover {
+      .zhihu-remark-feedback-chip:hover {
+        background: #e6f0fd;
+        border-color: #bbd6f7;
+        color: #056de8;
+      }
+      .zhihu-remark-feedback-left {
+        display: flex;
+        align-items: center;
+        margin-right: auto;
+      }
+      .zhihu-remark-thumbs-up-btn {
+        padding: 6px 12px;
+        font-size: 12px;
+        color: #595959;
+        background: #f6f6f6;
+        border: 1px solid #e8e8e8;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      }
+      .zhihu-remark-thumbs-up-btn:hover {
         background: #e6f0fd;
         border-color: #bbd6f7;
         color: #056de8;

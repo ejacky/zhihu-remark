@@ -379,7 +379,7 @@ const UI = {
           });
           rebuttalSection.appendChild(rebuttalContent);
 
-          // 自定义要求输入区（可折叠）
+          // 优化区（自定义要求 + 快捷反馈）
           const hintKey = `hint-${currentStyle}`;
           const historyKey = `history-${currentStyle}`;
           const intentKey = `intent-${currentStyle}`;
@@ -387,13 +387,17 @@ const UI = {
           const isExpanded = styleCustomHints[hintKey] !== undefined;
           const currentHint = styleCustomHints[hintKey] || '';
 
-          const customHintSection = Utils.createElement('div', {
-            className: 'zhihu-remark-custom-hint-section'
+          const optimizationSection = Utils.createElement('div', {
+            className: 'zhihu-remark-optimization-section'
           });
 
-          const toggleBtn = Utils.createElement('button', {
-            className: 'zhihu-remark-custom-hint-toggle',
-            textContent: isExpanded ? '收起要求 ▲' : '✏️ 添加自定义要求'
+          const optimizationToggle = Utils.createElement('button', {
+            className: 'zhihu-remark-optimization-toggle',
+            textContent: isExpanded ? '收起优化 ▲' : '✏️ 优化这次生成'
+          });
+
+          const optimizationContent = Utils.createElement('div', {
+            className: 'zhihu-remark-optimization-content'
           });
 
           const textarea = Utils.createElement('textarea', {
@@ -403,26 +407,62 @@ const UI = {
             value: currentHint
           });
 
-          toggleBtn.addEventListener('click', () => {
-            const expanded = customHintSection.classList.toggle('zhihu-remark-custom-hint-section--expanded');
-            toggleBtn.textContent = expanded ? '收起要求 ▲' : '✏️ 添加自定义要求';
+          textarea.addEventListener('input', (e) => {
+            styleCustomHints[hintKey] = e.target.value;
+          });
+
+          // 快捷反馈标签
+          const feedbackChips = Utils.createElement('div', {
+            className: 'zhihu-remark-feedback-chips'
+          });
+
+          const chipMap = [
+            { type: 'missedPoint', label: '漏重点', hint: '请优先补充被原回答忽略的关键原因、视角或论据。' },
+            { type: 'tooVague', label: '太泛泛', hint: '请具体指出原文哪里有问题，给出更有针对性的反驳。' },
+            { type: 'inaccurate', label: '不准确', hint: '请更严谨地核实事实和逻辑，避免不确定的断言。' },
+            { type: 'toneIssue', label: '语气差', hint: '请调整语气，使其更符合当前风格的预期。' }
+          ];
+
+          chipMap.forEach(({ type, label, hint }) => {
+            const chip = Utils.createElement('button', {
+              className: 'zhihu-remark-feedback-chip',
+              textContent: label
+            });
+            chip.addEventListener('click', () => {
+              if (onFeedback) {
+                onFeedback(currentStyle, { type });
+              }
+              optimizationSection.classList.add('zhihu-remark-optimization-section--expanded');
+              optimizationToggle.textContent = '收起优化 ▲';
+              const existing = styleCustomHints[hintKey] || '';
+              const separator = existing && !existing.endsWith('，') && !existing.endsWith('。') && !existing.endsWith('；') ? '；' : '';
+              const newValue = existing ? `${existing}${separator}${hint}` : hint;
+              styleCustomHints[hintKey] = newValue;
+              textarea.value = newValue;
+              setTimeout(() => textarea.focus(), 50);
+            });
+            feedbackChips.appendChild(chip);
+          });
+
+          optimizationContent.appendChild(textarea);
+          optimizationContent.appendChild(feedbackChips);
+
+          optimizationToggle.addEventListener('click', () => {
+            const expanded = optimizationSection.classList.toggle('zhihu-remark-optimization-section--expanded');
+            optimizationToggle.textContent = expanded ? '收起优化 ▲' : '✏️ 优化这次生成';
             if (expanded) {
               setTimeout(() => textarea.focus(), 50);
             }
           });
 
-          textarea.addEventListener('input', (e) => {
-            styleCustomHints[hintKey] = e.target.value;
-          });
-
-          customHintSection.appendChild(toggleBtn);
-          customHintSection.appendChild(textarea);
+          optimizationSection.appendChild(optimizationToggle);
+          optimizationSection.appendChild(optimizationContent);
 
           if (isExpanded) {
-            customHintSection.classList.add('zhihu-remark-custom-hint-section--expanded');
+            optimizationSection.classList.add('zhihu-remark-optimization-section--expanded');
           }
 
-          rebuttalSection.appendChild(customHintSection);
+          rebuttalSection.appendChild(optimizationSection);
 
           // 核心意图摘要展示与编辑
           const history = customHintHistory[historyKey] || [];
@@ -492,45 +532,31 @@ const UI = {
           contentArea.appendChild(lastHintTip);
         }
 
-        // 反馈区
-        const feedbackArea = Utils.createElement('div', {
-          className: 'zhihu-remark-feedback-area'
+        // 操作区
+        const feedbackLeft = Utils.createElement('div', {
+          className: 'zhihu-remark-feedback-left'
         });
         if (result.feedback) {
-          const feedbackThanks = Utils.createElement('div', {
+          const feedbackThanks = Utils.createElement('span', {
             className: 'zhihu-remark-feedback-thanks',
-            textContent: `✅ 已收到反馈：${UI._getFeedbackLabel(result.feedback.type)}`
+            textContent: result.feedback.type === 'helpful'
+              ? '✅ 已标记为有用'
+              : `✅ 已收到反馈：${UI._getFeedbackLabel(result.feedback.type)}`
           });
-          feedbackArea.appendChild(feedbackThanks);
+          feedbackLeft.appendChild(feedbackThanks);
         } else {
-          const feedbackLabel = Utils.createElement('span', {
-            className: 'zhihu-remark-feedback-label',
-            textContent: '这次生成有帮助吗？'
+          const thumbsUpBtn = Utils.createElement('button', {
+            className: 'zhihu-remark-thumbs-up-btn',
+            title: '这次生成有用',
+            textContent: '👍 有用'
           });
-          feedbackArea.appendChild(feedbackLabel);
-
-          const feedbackButtons = [
-            { type: 'helpful', label: '👍 有用' },
-            { type: 'missedPoint', label: '漏重点' },
-            { type: 'tooVague', label: '太泛泛' },
-            { type: 'inaccurate', label: '不准确' },
-            { type: 'toneIssue', label: '语气差' }
-          ];
-
-          feedbackButtons.forEach(({ type, label }) => {
-            const btn = Utils.createElement('button', {
-              className: 'zhihu-remark-feedback-btn',
-              textContent: label,
-              onClick: () => {
-                if (onFeedback) {
-                  onFeedback(currentStyle, { type });
-                }
-              }
-            });
-            feedbackArea.appendChild(btn);
+          thumbsUpBtn.addEventListener('click', () => {
+            if (onFeedback) {
+              onFeedback(currentStyle, { type: 'helpful' });
+            }
           });
+          feedbackLeft.appendChild(thumbsUpBtn);
         }
-        actionsArea.appendChild(feedbackArea);
 
         // 操作按钮
         const regenerateBtn = Utils.createElement('button', {
@@ -563,7 +589,6 @@ const UI = {
             if (onRegenerate) onRegenerate(currentStyle, finalHint.trim());
           }
         });
-        actionsArea.appendChild(regenerateBtn);
 
         const useBtn = Utils.createElement('button', {
           className: 'zhihu-remark-btn zhihu-remark-btn--primary',
@@ -573,6 +598,9 @@ const UI = {
             closePanel();
           }
         });
+
+        actionsArea.appendChild(feedbackLeft);
+        actionsArea.appendChild(regenerateBtn);
         actionsArea.appendChild(useBtn);
       }
     }
