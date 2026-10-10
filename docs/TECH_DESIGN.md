@@ -64,6 +64,7 @@ manifest.json
 │   ├── constants.js      (共享常量)
 │   ├── utils.js          (工具函数)
 │   ├── permissions.js    (API 域名权限)
+│   ├── opencode.js       (Go/Zen 网关适配)
 │   ├── prompts.js        (Prompt模板)
 │   ├── storage.js        (存储管理)
 │   ├── api.js            (API封装)
@@ -105,6 +106,7 @@ manifest.json
 | `constants.js` | 存储键、默认配置、提供商默认值与模型列表、风格/错误类型/严格程度定义、消息类型 | content / background / popup / options |
 | `utils.js` | 防抖节流、DOM 元素构造、JSON 提取、剪贴板、日期格式化 | content / background |
 | `permissions.js` | API 域名权限：apiBase 规范化与 origin 解析、`chrome.permissions` 查询与申请 | background / options |
+| `opencode.js` | OpenCode Go / Zen 网关适配：端点识别、`x-opencode-session` 会话标识派生 | background |
 | `prompts.js` | System / User Prompt 构建、重新生成提示、动态指令与 Few-shot 示例 | background / options |
 
 ---
@@ -308,6 +310,40 @@ Body:
   "messages": [{ "role": "user", "content": "..." }]
 }
 ```
+
+#### OpenCode Go / Zen（OpenAI 兼容）
+
+Go 与 Zen 要求每个请求携带稳定的 `x-opencode-session`（用于路由亲和与 prompt 缓存），
+缺失时网关会在进入模型前直接返回 `400 Request is missing x-opencode-session`。
+`shared/opencode.js` 负责端点识别与会话标识派生，`background/api.js` 在发请求前自动附带该头，
+用户无需手动配置。
+
+会话标识按「回答」维度派生（`URL + 作者 + 正文前 300 字` → SHA-256 → UUID v4 形状），
+因此同一回答的首次生成、重新生成、切换风格复用同一标识，不同回答之间互相隔离；
+派生是确定性的，Service Worker 重启后依然稳定，无需持久化状态。
+
+```
+POST https://opencode.ai/zen/go/v1/chat/completions
+Headers:
+  Authorization: Bearer {apiKey}
+  Content-Type: application/json
+  x-opencode-session: {由当前回答派生，自动附带}
+Body:
+{
+  "model": "kimi-k2.6",
+  "messages": [ ... ],
+  "temperature": 0.7,
+  "max_tokens": 3072
+}
+```
+
+> 注意：Go 的部分模型（Grok 4.x、GPT Luna、Qwen3.x、MiniMax、Claude Haiku 等）走
+> `/v1/responses` 或 `/v1/messages` 端点，本扩展目前只支持 OpenAI 兼容的 `/chat/completions` 类模型。
+> 完整模型与端点对照见官方文档的 Endpoints 一节。
+>
+> 另：Go 文档建议客户端用自己的 User-Agent 标识自身。Chrome 不允许 `fetch` 设置 `User-Agent`
+> （属 forbidden request header），若网关后续强制校验该头，需要额外申请 `declarativeNetRequest`
+> 权限并通过 `modifyHeaders` 规则改写。
 
 ### 4.3 AI 响应格式
 

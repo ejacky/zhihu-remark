@@ -137,6 +137,24 @@
 > 自定义 API 的域名只能在保存配置时按需申请。如果在授权弹窗中点了「拒绝」，配置**不会**被保存，
 > 请重新点击保存并选择「允许」。本地模型地址（`localhost` / `127.0.0.1`，如 Ollama）同样需要授权。
 
+#### 使用 OpenCode Go / Zen（可选）
+
+如果你订阅了 OpenCode Go（或使用 Zen），可以把它当作自定义 API 接入：
+
+| 项 | 填写内容 |
+|----|----------|
+| AI 提供商 | 自定义 API |
+| API Base URL | `https://opencode.ai/zen/go/v1` |
+| 模型 | 需选择走 `/chat/completions` 的模型，例如 `kimi-k2.6`、`kimi-k2.7-code`、`glm-5.3`、`glm-5.3-flash`、`deepseek-v4.1-flash`、`longcat-2.0` |
+| API Key | 在 OpenCode Console 复制的 Key |
+
+扩展会自动附带网关要求的 `x-opencode-session`（按当前回答派生；同一回答的重新生成、切换风格会复用同一标识），
+无需手动配置。保存时浏览器仍会请求访问 `opencode.ai` 的授权。
+
+> ⚠️ OpenCode 官方文档说明 Go **面向 OpenCode 及产生同类流量的编码代理**，并会监控异常流量。
+> 本扩展的用途（生成知乎反驳评论）不在其文档描述的范围内，请自行评估账号风险；
+> 对稳定性要求高的场景建议使用内置的 DeepSeek / Kimi 直连。
+
 ### 4.2 反驳风格
 
 | 风格 | 适用场景 | 特点 |

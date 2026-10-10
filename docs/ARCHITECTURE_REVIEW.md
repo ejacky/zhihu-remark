@@ -61,7 +61,7 @@
 
 ### 1.2 统计事实
 
-- 源码 21 个文件；`src/content/ui.js` 842 行、`src/content/index.js` 621 行、`src/content/injector.js` 597 行。
+- 源码 23 个文件（评审时 21 个，后续新增 `src/shared/permissions.js`、`src/shared/opencode.js`）；`src/content/ui.js` 842 行、`src/content/index.js` 621 行、`src/content/injector.js` 597 行。
 - 测试文件 0 个；lint/format 配置 0 个；`package.json` 不存在。
 - `src/content/style.css`（331 非空行）与 `src/content/index.js` 内联样式（541 非空行）：**310 行完全相同，21 行仅存在于 CSS，128 行仅存在于 JS**——两份真源已漂移。
 - 消息类型已有 `CONSTANTS.MESSAGE_TYPES`，但 popup/options 中有 6 处裸字符串。
@@ -511,3 +511,4 @@ src/
 |------|------|------|
 | v1.0 | 2026-10-10 | 首版：全量源码评审，输出 11 项 P0、10 项 P1、5 项 P2、8 项文档漂移 |
 | v1.1 | 2026-10-10 | P0-1 修复完成（自定义 API 域名动态授权：新增 `shared/permissions.js`、`optional_host_permissions`、保存时授权 + 请求前校验）；同步 `docs/PRD.md` FR-006、`docs/TECH_DESIGN.md` §2.1/§5.1/§7.3/§8、`docs/USER_GUIDE.md` §4.1 |
+| v1.2 | 2026-10-10 | 新增能力（非评审条目）：OpenCode Go / Zen 网关适配 —— 新增 `shared/opencode.js`，`background/api.js` 自动附带 `x-opencode-session`（按回答派生稳定会话标识）；同步 PRD FR-006、TECH_DESIGN §2.1/§2.3/§4.2、USER_GUIDE §4.1 |

@@ -82,10 +82,10 @@ const API = {
 
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
-      headers: {
+      headers: await this._buildHeaders(apiBase, {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`
-      },
+      }, content),
       body: JSON.stringify(requestBody)
     });
 
@@ -138,11 +138,11 @@ const API = {
 
     const response = await fetch(`${apiBase}/messages`, {
       method: 'POST',
-      headers: {
+      headers: await this._buildHeaders(apiBase, {
         'Content-Type': 'application/json',
         'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
-      },
+      }, content),
       body: JSON.stringify({
         model,
         max_tokens: maxTokens,
@@ -176,6 +176,25 @@ const API = {
       throw new Error('自定义 API 需要配置 API Base URL');
     }
     return this._callOpenAICompatible('custom', content, config, regenerateHint);
+  },
+
+  /**
+   * 组装请求头，并按网关要求补充必需的头
+   *
+   * OpenCode Go / Zen 要求每个请求携带稳定的 x-opencode-session，否则网关会在进入
+   * 模型前直接返回 400（Request is missing x-opencode-session）。会话标识按回答派生，
+   * 因此同一回答的首次生成、重新生成、切换风格会复用同一标识，正好匹配网关对
+   * 「每个会话一个稳定 ID」的要求（路由亲和 + prompt 缓存）。
+   * @param {string} apiBase - 已规范化的 API Base URL
+   * @param {Object} baseHeaders - 各提供商自身的鉴权与内容类型头
+   * @param {Object} content - 回答内容（用于派生会话标识）
+   */
+  async _buildHeaders(apiBase, baseHeaders, content) {
+    if (OpenCode.isEndpoint(apiBase)) {
+      baseHeaders['x-opencode-session'] = await OpenCode.sessionIdFor(content);
+    }
+
+    return baseHeaders;
   },
 
   /**
