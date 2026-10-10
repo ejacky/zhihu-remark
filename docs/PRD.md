@@ -103,6 +103,8 @@
 - 支持 DeepSeek、Kimi、OpenAI、Claude、自定义 API
 - 配置 API Key、模型、Base URL
 - Temperature 和 Max Tokens 调节
+- 自定义 API：保存时向浏览器申请该域名的访问授权（Chrome 可选权限），未授权则不保存配置
+- API Base URL 自动规范化（补全协议、去末尾斜杠），本地地址（localhost / 127.0.0.1）默认按 http 处理
 
 #### FR-007：风格选择
 - 温和理性（默认）：平和建设性

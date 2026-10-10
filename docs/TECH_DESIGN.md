@@ -63,6 +63,7 @@ manifest.json
 ├── background
 │   ├── constants.js      (共享常量)
 │   ├── utils.js          (工具函数)
+│   ├── permissions.js    (API 域名权限)
 │   ├── prompts.js        (Prompt模板)
 │   ├── storage.js        (存储管理)
 │   ├── api.js            (API封装)
@@ -72,6 +73,9 @@ manifest.json
 │   ├── style.css
 │   └── index.js
 └── options
+    ├── constants.js      (共享常量)
+    ├── permissions.js    (API 域名权限)
+    ├── prompts.js        (Prompt模板)
     ├── index.html
     ├── style.css
     └── index.js
@@ -93,6 +97,15 @@ manifest.json
 - **API 调用**：向 AI 服务发送请求
 - **配置管理**：读写用户设置
 - **历史记录**：保存和查询生成记录
+
+### 2.3 共享模块（src/shared/）
+
+| 模块 | 职责 | 使用方 |
+|------|------|--------|
+| `constants.js` | 存储键、默认配置、提供商默认值与模型列表、风格/错误类型/严格程度定义、消息类型 | content / background / popup / options |
+| `utils.js` | 防抖节流、DOM 元素构造、JSON 提取、剪贴板、日期格式化 | content / background |
+| `permissions.js` | API 域名权限：apiBase 规范化与 origin 解析、`chrome.permissions` 查询与申请 | background / options |
+| `prompts.js` | System / User Prompt 构建、重新生成提示、动态指令与 Few-shot 示例 | background / options |
 
 ---
 
@@ -353,6 +366,8 @@ interface AIResponse {
 }
 ```
 
+> `apiBase` 仅在自定义提供商下生效，保存时会规范化为「含协议、无末尾斜杠」的形式（见 7.3）。
+
 #### 历史记录项 (zhihu_remark_history)
 ```json
 {
@@ -428,6 +443,14 @@ interface AIResponse {
 - 使用 HTTPS
 - 不在请求中附带用户身份信息
 
+#### 域名访问权限（host permission）
+- **内置提供商**（OpenAI / Claude / DeepSeek / Kimi）的域名写入 `manifest.json` 的 `host_permissions`，安装即生效
+- **自定义 API** 的域名无法预先声明，改为运行时按需授权：
+  - `manifest.json` 声明 `optional_host_permissions`：`https://*/*`、`http://localhost/*`、`http://127.0.0.1/*`（匹配模式忽略端口，因此本地任意端口均可覆盖）
+  - 用户在设置页点击"保存"时，由 `options/index.js` 在**用户手势的同一调用帧**内调用 `chrome.permissions.request()`；被拒绝则该次配置不保存，并给出可操作提示
+  - `background/api.js` 在每次请求前用 `chrome.permissions.contains()` 二次校验，未授权时直接抛出可读错误，避免出现难以理解的跨域报错
+- API Base URL 统一由 `shared/permissions.js` 规范化：补全协议、去掉末尾斜杠；`localhost` / `127.0.0.1` 等本地地址默认按 `http` 处理（如 Ollama、LM Studio）
+
 ---
 
 ## 8. 错误处理
@@ -435,6 +458,7 @@ interface AIResponse {
 | 场景 | 处理方式 |
 |------|----------|
 | API Key 未配置 | 提示用户进入设置页面 |
+| 自定义 API 域名未授权 | 保存时提示重新授权（拒绝则不保存）；请求前二次校验，返回可操作提示 |
 | API 调用失败 | 显示具体错误信息（HTTP 状态码 + 错误消息） |
 | 内容提取失败 | 提示刷新页面，多策略 fallback |
 | JSON 解析失败 | 提示"AI 返回格式错误"，记录原始内容 |

@@ -178,6 +178,28 @@
       return;
     }
 
+    // 自定义 API 的域名无法预先写入 manifest.host_permissions，必须在此动态申请。
+    // 关键约束：HostAccess.request() 之前不能出现任何 await，否则会丢失用户手势，
+    // Chrome 会直接拒绝本次权限申请。
+    if (config.provider === 'custom') {
+      const apiBase = HostAccess.normalizeApiBase(config.apiBase);
+      const origin = HostAccess.originOf(apiBase);
+
+      if (!origin) {
+        showStatus('请填写有效的 API Base URL，例如 https://api.example.com/v1', true);
+        return;
+      }
+
+      const granted = await HostAccess.request(origin);
+      if (!granted) {
+        showStatus(`未授权访问 ${origin}，配置未保存。请重新点击保存并在弹窗中选择「允许」，或改用内置提供商`, true);
+        return;
+      }
+
+      // 保存规范化后的地址（含协议），避免运行时再补全
+      config.apiBase = apiBase;
+    }
+
     try {
       const response = await sendMessage({
         type: 'SET_CONFIG',

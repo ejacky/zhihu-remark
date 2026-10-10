@@ -7,6 +7,7 @@
 importScripts(
   '../shared/constants.js',
   '../shared/utils.js',
+  '../shared/permissions.js',
   '../shared/prompts.js',
   './storage.js',
   './api.js'

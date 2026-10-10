@@ -38,7 +38,9 @@ const API = {
       throw new Error(`请先在扩展设置中配置 ${providerNames[provider] || provider} API Key`);
     }
 
-    const apiBase = config.apiBase || CONSTANTS.PROVIDER_DEFAULTS[provider]?.apiBase || '';
+    const apiBase = HostAccess.normalizeApiBase(config.apiBase)
+      || CONSTANTS.PROVIDER_DEFAULTS[provider]?.apiBase
+      || '';
     const model = config.model || CONSTANTS.PROVIDER_DEFAULTS[provider]?.models?.[0] || CONSTANTS.DEFAULT_CONFIG.model;
     const temperature = config.temperature ?? CONSTANTS.DEFAULT_CONFIG.temperature;
     const maxTokens = config.maxTokens ?? CONSTANTS.DEFAULT_CONFIG.maxTokens;
@@ -76,6 +78,8 @@ const API = {
       requestBody.response_format = { type: 'json_object' };
     }
 
+    await this._assertHostAccess(apiBase);
+
     const response = await fetch(`${apiBase}/chat/completions`, {
       method: 'POST',
       headers: {
@@ -109,7 +113,8 @@ const API = {
       throw new Error('请先在扩展设置中配置 Claude API Key');
     }
 
-    const apiBase = config.apiBase || CONSTANTS.PROVIDER_DEFAULTS.anthropic.apiBase;
+    const apiBase = HostAccess.normalizeApiBase(config.apiBase)
+      || CONSTANTS.PROVIDER_DEFAULTS.anthropic.apiBase;
     const model = config.model || 'claude-3-5-sonnet-20241022';
     const maxTokens = config.maxTokens ?? CONSTANTS.DEFAULT_CONFIG.maxTokens;
 
@@ -128,6 +133,8 @@ const API = {
     if (regenerateHint) {
       userPrompt += '\n\n' + regenerateHint;
     }
+
+    await this._assertHostAccess(apiBase);
 
     const response = await fetch(`${apiBase}/messages`, {
       method: 'POST',
@@ -169,6 +176,25 @@ const API = {
       throw new Error('自定义 API 需要配置 API Base URL');
     }
     return this._callOpenAICompatible('custom', content, config, regenerateHint);
+  },
+
+  /**
+   * 校验扩展是否有权访问该 API 域名
+   *
+   * 内置提供商的域名已在 manifest.host_permissions 中声明；自定义 API 的域名
+   * 需要在设置页保存时由用户授权（optional_host_permissions）。若未授权，
+   * 直接 fetch 只会得到难以理解的跨域错误，因此在此提前给出可操作的提示。
+   * @param {string} apiBase - 已规范化的 API Base URL
+   */
+  async _assertHostAccess(apiBase) {
+    const origin = HostAccess.originOf(apiBase);
+    if (!origin) {
+      throw new Error(`API Base URL 无效：${apiBase || '(未填写)'}，请检查扩展设置`);
+    }
+
+    if (await HostAccess.has(origin)) return;
+
+    throw new Error(`未授权访问 ${origin}。请打开扩展设置页重新保存配置，并在弹窗中点击「允许」`);
   },
 
   /**
