@@ -136,6 +136,7 @@
 - **验收标准**：填入非白名单域名（如 `https://my-proxy.example.com/v1`）→ 保存时弹出授权 → 授权后能成功生成；拒绝授权时提示明确且不再尝试请求。
 - **状态**：✅ 已完成
 > 修复：`manifest.json` 新增 `optional_host_permissions`（`https://*/*`、`http://localhost/*`、`http://127.0.0.1/*`）；新增 `src/shared/permissions.js`（`HostAccess`：规范化 apiBase / 解析 origin / `contains` + `request`）；`src/options/index.js` 保存自定义 API 时在用户手势内申请授权，拒绝则不保存并给出可操作提示；`src/background/api.js` 请求前二次校验并统一规范化地址；`src/background/index.js` 与 `src/options/index.html` 引入新模块。
+> 后续（v1.3）：内置提供商也允许手动改写 API Base URL，保存时的授权改为按「实际生效地址」统一申请（内置域名已授权，`request()` 静默通过，不重复弹窗）。
 > 验证：`HostAccess` 的 URL 规范化与 origin 解析已用 Node 断言覆盖 10 组用例（含无协议、本地地址、非法输入），全部通过；Chrome 内的授权弹窗与拒绝路径**尚未手动回归**（待执行附录 B 用例 7）。
 
 ### P0-2 面板恢复后 textarea 内容丢失
@@ -512,3 +513,4 @@ src/
 | v1.0 | 2026-10-10 | 首版：全量源码评审，输出 11 项 P0、10 项 P1、5 项 P2、8 项文档漂移 |
 | v1.1 | 2026-10-10 | P0-1 修复完成（自定义 API 域名动态授权：新增 `shared/permissions.js`、`optional_host_permissions`、保存时授权 + 请求前校验）；同步 `docs/PRD.md` FR-006、`docs/TECH_DESIGN.md` §2.1/§5.1/§7.3/§8、`docs/USER_GUIDE.md` §4.1 |
 | v1.2 | 2026-10-10 | 新增能力（非评审条目）：OpenCode Go / Zen 网关适配 —— 新增 `shared/opencode.js`，`background/api.js` 自动附带 `x-opencode-session`（按回答派生稳定会话标识）；同步 PRD FR-006、TECH_DESIGN §2.1/§2.3/§4.2、USER_GUIDE §4.1 |
+| v1.3 | 2026-10-15 | 新增能力（非评审条目）：API Base URL 与模型名称对所有提供商开放手动填写（内置提供商也可指向代理 / 镜像 / 新域名，模型名可自由输入，候选列表改为 datalist 建议）；保存时按实际生效地址统一申请域名授权；同步 PRD FR-006/FR-012、TECH_DESIGN §2.3/§4.2/§5.1/§7.3/§8、USER_GUIDE §2.2/§4.1。经两轮独立代理验证后追加修复：切换提供商往返不再丢失已保存的 `apiBase`/`model`；`request()` 返回 false 时用 `contains()` 复核兜底；地址有效性校验加固（只有协议 / 协议后多余斜杠 / 非 http(s) 协议 / 主机名畸形的地址不再被规范化成垃圾值落库）；`patternOf()` 生成匹配模式时剔除端口；误填完整端点与不可授权的明文 http 域名在保存前拦截 |

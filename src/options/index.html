@@ -26,7 +26,7 @@
       <section class="tab-panel active" id="tab-api">
         <div class="panel-title">
           <h2>API 配置</h2>
-          <p>选择 AI 提供商并配置 API Key</p>
+          <p>选择 AI 提供商并配置 API Key；API Base URL 与模型名称均可手动填写</p>
         </div>
 
         <div class="form-group">
@@ -61,17 +61,17 @@
           <span class="form-hint">您的 API Key 仅存储在本地，不会上传到任何服务器</span>
         </div>
 
-        <div class="form-group" id="apiBaseGroup" style="display: none;">
+        <div class="form-group" id="apiBaseGroup">
           <label for="apiBase">API Base URL</label>
-          <input type="text" id="apiBase" placeholder="https://api.example.com/v1">
-          <span class="form-hint">自定义 API 的 Base URL（必填，可省略 https://）。保存时浏览器会请求访问该域名的授权</span>
+          <input type="text" id="apiBase" placeholder="https://api.example.com/v1" autocomplete="off">
+          <span class="form-hint" id="apiBaseHint">留空使用当前提供商的默认地址，也可手动填写代理 / 镜像地址</span>
         </div>
 
         <div class="form-group">
           <label for="model">模型</label>
-          <select id="model"></select>
-          <input type="text" id="modelCustom" placeholder="输入模型名称" style="display:none;">
-          <span class="form-hint" id="modelHint">选择该提供商支持的模型版本</span>
+          <input type="text" id="model" list="modelOptions" placeholder="输入模型名称" autocomplete="off">
+          <datalist id="modelOptions"></datalist>
+          <span class="form-hint" id="modelHint">可直接输入模型名称，或从建议列表中选择</span>
         </div>
 
         <div class="form-row">

@@ -1,5 +1,12 @@
 /**
  * 知乎反驳助手 - 全局常量
+ *
+ * PROVIDER_DEFAULTS 中的 apiBase / models 只是「默认地址」与「输入建议」：
+ * 设置页允许用户为任何提供商手动改写 API Base URL 与模型名称（官方地址与模型名
+ * 会随时间变化），运行时以用户填写的值为准，留空才回退到这里的内置值。
+ *
+ * @doc docs/TECH_DESIGN.md#51-数据模型
+ * @doc docs/USER_GUIDE.md#41-api-设置
  */
 
 const CONSTANTS = {
@@ -16,7 +23,7 @@ const CONSTANTS = {
     provider: 'deepseek',
     // API 配置
     apiKey: '',
-    apiBase: '', // 留空使用默认
+    apiBase: '', // 留空使用所选提供商的内置地址；填写则覆盖（代理 / 镜像 / 本地网关 / 官方换域名）
     model: 'deepseek-v4-pro',
     // 生成参数
     temperature: 0.7,
@@ -45,6 +52,9 @@ const CONSTANTS = {
   },
 
   // 提供商默认配置
+  //
+  // apiBase：用户未填写 API Base URL 时使用的默认地址，设置页会把它显示为输入框 placeholder
+  // models：设置页模型输入框的建议列表（datalist），不限制用户手动输入其他模型名
   PROVIDER_DEFAULTS: {
     openai: {
       apiBase: 'https://api.openai.com/v1',

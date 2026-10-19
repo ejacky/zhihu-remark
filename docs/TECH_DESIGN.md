@@ -103,9 +103,9 @@ manifest.json
 
 | 模块 | 职责 | 使用方 |
 |------|------|--------|
-| `constants.js` | 存储键、默认配置、提供商默认值与模型列表、风格/错误类型/严格程度定义、消息类型 | content / background / popup / options |
+| `constants.js` | 存储键、默认配置、提供商默认地址与模型建议列表（仅作默认值与输入建议，可被用户配置覆盖）、风格/错误类型/严格程度定义、消息类型 | content / background / popup / options |
 | `utils.js` | 防抖节流、DOM 元素构造、JSON 提取、剪贴板、日期格式化 | content / background |
-| `permissions.js` | API 域名权限：apiBase 规范化与 origin 解析、`chrome.permissions` 查询与申请 | background / options |
+| `permissions.js` | API 域名权限：apiBase 规范化与有效性校验、origin 解析、可申请范围判定、`chrome.permissions` 查询与申请 | background / options |
 | `opencode.js` | OpenCode Go / Zen 网关适配：端点识别、`x-opencode-session` 会话标识派生 | background |
 | `prompts.js` | System / User Prompt 构建、重新生成提示、动态指令与 Few-shot 示例 | background / options |
 
@@ -237,6 +237,11 @@ Content Script ↔ Service Worker 通信：
 | SHOW_NOTIFICATION | B→C | `{ message, type }` | `{ received }` |
 
 ### 4.2 外部 AI API
+
+> **地址与模型由配置决定**：下面各提供商的 URL 与模型名只是内置默认值。
+> `config.apiBase` / `config.model` 一旦填写就优先使用（对所有提供商生效），
+> `apiBase` 留空时才回退到 `PROVIDER_DEFAULTS[provider].apiBase`。
+> 因此官方换域名、模型改名或走代理 / 镜像时，用户在设置页就地修改即可，无需等扩展发版。
 
 #### DeepSeek Chat Completions（OpenAI 兼容）
 ```
@@ -380,7 +385,7 @@ interface AIResponse {
   "apiBase": "",
   "model": "deepseek-v4-pro",
   "temperature": 0.7,
-  "maxTokens": 2048,
+  "maxTokens": 3072,
   "style": "gentle",
   "errorTypes": {
     "factError": true,
@@ -402,7 +407,9 @@ interface AIResponse {
 }
 ```
 
-> `apiBase` 仅在自定义提供商下生效，保存时会规范化为「含协议、无末尾斜杠」的形式（见 7.3）。
+> `apiBase` 对**所有**提供商都可填写（含内置提供商），用于覆盖官方地址（代理 / 镜像 / 本地网关 / 换域名）；
+> 留空表示沿用 `PROVIDER_DEFAULTS[provider].apiBase`。保存时会规范化为「含协议、无末尾斜杠」的形式（见 7.3）。
+> `model` 为自由文本，`PROVIDER_DEFAULTS[provider].models` 仅作为设置页的输入建议（datalist）。
 
 #### 历史记录项 (zhihu_remark_history)
 ```json
@@ -480,12 +487,19 @@ interface AIResponse {
 - 不在请求中附带用户身份信息
 
 #### 域名访问权限（host permission）
-- **内置提供商**（OpenAI / Claude / DeepSeek / Kimi）的域名写入 `manifest.json` 的 `host_permissions`，安装即生效
-- **自定义 API** 的域名无法预先声明，改为运行时按需授权：
+- **内置提供商**（OpenAI / Claude / DeepSeek / Kimi）的官方域名写入 `manifest.json` 的 `host_permissions`，安装即生效
+- **自定义 API，以及内置提供商被手动改写为其它域名时**（代理 / 镜像 / 本地网关 / 官方换域名），新域名无法预先声明，改为运行时按需授权：
   - `manifest.json` 声明 `optional_host_permissions`：`https://*/*`、`http://localhost/*`、`http://127.0.0.1/*`（匹配模式忽略端口，因此本地任意端口均可覆盖）
-  - 用户在设置页点击"保存"时，由 `options/index.js` 在**用户手势的同一调用帧**内调用 `chrome.permissions.request()`；被拒绝则该次配置不保存，并给出可操作提示
+  - `HostAccess.patternOf()` 生成模式时会**剔除 origin 里的端口**（`http://localhost:11434` → `http://localhost/*`）：Chrome 匹配模式以主机为粒度，而 `URL.origin` 带端口，直接拼接会产出 `http://localhost:11434/*` 这种 Chrome 可能拒收的形式
+  - 用户在设置页点击"保存"时，`options/index.js` 先算出**实际生效的地址**（用户填写值，留空则取提供商内置地址），再在**用户手势的同一调用帧**内调用 `chrome.permissions.request()`；对已授权域名（含内置域名）静默通过，不重复弹窗。被拒绝时再用 `chrome.permissions.contains()` 复核一次（复核放在 `request()` 之后，不影响手势要求），仅当确实无权限才判定失败、不保存配置并给出可操作提示
+  - 切换提供商时，若切回的是**当前已保存配置的提供商**，设置页会恢复其已保存的 `apiBase` / `model`；只有切到别的提供商才清空地址覆盖，避免"切出去看一眼再切回来"导致已保存的覆盖地址被静默清空
   - `background/api.js` 在每次请求前用 `chrome.permissions.contains()` 二次校验，未授权时直接抛出可读错误，避免出现难以理解的跨域报错
-- API Base URL 统一由 `shared/permissions.js` 规范化：补全协议、去掉末尾斜杠；`localhost` / `127.0.0.1` 等本地地址默认按 `http` 处理（如 Ollama、LM Studio）
+- API Base URL 统一由 `shared/permissions.js` 规范化：补全协议（含 `https:/x` 少写一个斜杠的手误）、去掉末尾斜杠；`localhost` / `127.0.0.1` 等本地地址默认按 `http` 处理（如 Ollama、LM Studio）
+- 保存前的地址校验（`options/index.js`，全部为同步检查，不破坏权限申请的用户手势要求）：
+  - 畸形地址（只有协议 `https://`、协议后多余斜杠或空查询 `https:///x`、非 http(s) 协议 `ftp://…`、主机名缺失或等于协议名的 `https://https`）由 `normalizeApiBase()` / `originOf()` 判为无效，设置页直接报错，不会把垃圾值存进配置（否则该提供商此后所有请求都会失败，且错误信息指向 `https://https` 这类无意义域名）
+  - 误把完整端点填进 Base URL（以 `/chat/completions` 或 `/messages` 结尾）会被拦下并提示只填到 `/v1`
+  - 明文 `http` 只有 `localhost` / `127.0.0.1` 在 `optional_host_permissions` 范围内，其它 `http` 域名（含内网 IP）由 `HostAccess.isRequestable()` 提前拦截，并提示改用 `https` 或本地地址，避免用户陷入「提示点允许 → 弹窗不出现 → 再次失败」的死循环
+- `apiBase` 的语义是「留空即回退内置地址」，因此设置页**不会**把内置地址写进配置（保存的 `apiBase` 为空字符串时运行时才取默认值），用户也就能随时清空输入框回到官方地址
 
 ---
 
@@ -494,7 +508,7 @@ interface AIResponse {
 | 场景 | 处理方式 |
 |------|----------|
 | API Key 未配置 | 提示用户进入设置页面 |
-| 自定义 API 域名未授权 | 保存时提示重新授权（拒绝则不保存）；请求前二次校验，返回可操作提示 |
+| 自定义 API 域名（或内置提供商改写后的新域名）未授权 | 保存时提示重新授权（拒绝则不保存）；请求前二次校验，返回可操作提示 |
 | API 调用失败 | 显示具体错误信息（HTTP 状态码 + 错误消息） |
 | 内容提取失败 | 提示刷新页面，多策略 fallback |
 | JSON 解析失败 | 提示"AI 返回格式错误"，记录原始内容 |

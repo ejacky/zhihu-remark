@@ -1,6 +1,12 @@
 /**
  * 知乎反驳助手 - AI API 调用封装
  * 支持 OpenAI、Claude、DeepSeek、Kimi 等主流 API
+ *
+ * 地址与模型优先使用用户配置：`config.apiBase` 为空才回退到 PROVIDER_DEFAULTS 的内置地址，
+ * 因此内置提供商同样可以指向代理 / 镜像 / 本地网关（官方换域名时无需等扩展更新）。
+ *
+ * @doc docs/TECH_DESIGN.md#42-外部-ai-api
+ * @doc docs/TECH_DESIGN.md#73-网络安全
  */
 
 const API = {
@@ -38,6 +44,7 @@ const API = {
       throw new Error(`请先在扩展设置中配置 ${providerNames[provider] || provider} API Key`);
     }
 
+    // 用户填写的地址优先（内置提供商也可覆盖），留空才用提供商默认地址
     const apiBase = HostAccess.normalizeApiBase(config.apiBase)
       || CONSTANTS.PROVIDER_DEFAULTS[provider]?.apiBase
       || '';
@@ -113,6 +120,7 @@ const API = {
       throw new Error('请先在扩展设置中配置 Claude API Key');
     }
 
+    // 同上：用户填写的地址优先
     const apiBase = HostAccess.normalizeApiBase(config.apiBase)
       || CONSTANTS.PROVIDER_DEFAULTS.anthropic.apiBase;
     const model = config.model || 'claude-3-5-sonnet-20241022';
