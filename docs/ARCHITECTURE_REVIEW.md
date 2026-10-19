@@ -472,9 +472,9 @@ src/
 
 | ID | 文档位置 | 现状 | 代码事实 | 关联项 | 状态 |
 |----|----------|------|----------|--------|------|
-| D-1 | `docs/TECH_DESIGN.md:3` | 版本 `v1.0.0` | `manifest.json:4` 为 `1.1.0` | — | ⬜ |
+| D-1 | `docs/TECH_DESIGN.md:3` | 版本 `v1.0.0` | `manifest.json:4` 为 `1.1.0` | — | ✅ 2026-10-19 已对齐（TECH_DESIGN 头部版本随 manifest 更新为 v1.1.1） |
 | D-2 | `docs/TECH_DESIGN.md:378` | "所有数据本地存储，与 Chrome 用户账户同步" | 使用 `chrome.storage.local`，**不随账户同步** | P0-7 | ⬜ |
-| D-3 | `docs/TECH_DESIGN.md:334`、4.2 节各示例 | `maxTokens: 2048` | `src/shared/constants.js:23` 默认 `3072`；`src/options/index.html:86` 默认 3072 | P1-7 | ⬜ |
+| D-3 | `docs/TECH_DESIGN.md:334`、4.2 节各示例 | `maxTokens: 2048` | `src/shared/constants.js:23` 默认 `3072`；`src/options/index.html:86` 默认 3072 | P1-7 | ✅ 2026-10-19 已修（§4.2 各示例与 §5.1 统一为实际默认值 4096；默认值本身同时提升为 4096、设置页上限 8192） |
 | D-4 | `docs/TECH_DESIGN.md:449-453` | 承诺"内容缓存 / 请求去重 / 历史分页加载 / 代码分割" | 均未实现（无缓存层、无去重、`getHistory` 一次性返回、共享模块全量注入） | P0-8, P0-9, P2-4 | ⬜ |
 | D-5 | `docs/TECH_DESIGN.md:222` | `SHOW_NOTIFICATION` 为 B→C 协议 | 无任何发送方 | P1-10 | ⬜ |
 | D-6 | `docs/TECH_DESIGN.md:379` vs `docs/PRD.md:125` | 历史限制 10 条 | 存储层 10 条，但 options 请求 20 条 | P0-10 | ⬜ |
@@ -514,3 +514,4 @@ src/
 | v1.1 | 2026-10-10 | P0-1 修复完成（自定义 API 域名动态授权：新增 `shared/permissions.js`、`optional_host_permissions`、保存时授权 + 请求前校验）；同步 `docs/PRD.md` FR-006、`docs/TECH_DESIGN.md` §2.1/§5.1/§7.3/§8、`docs/USER_GUIDE.md` §4.1 |
 | v1.2 | 2026-10-10 | 新增能力（非评审条目）：OpenCode Go / Zen 网关适配 —— 新增 `shared/opencode.js`，`background/api.js` 自动附带 `x-opencode-session`（按回答派生稳定会话标识）；同步 PRD FR-006、TECH_DESIGN §2.1/§2.3/§4.2、USER_GUIDE §4.1 |
 | v1.3 | 2026-10-15 | 新增能力（非评审条目）：API Base URL 与模型名称对所有提供商开放手动填写（内置提供商也可指向代理 / 镜像 / 新域名，模型名可自由输入，候选列表改为 datalist 建议）；保存时按实际生效地址统一申请域名授权；同步 PRD FR-006/FR-012、TECH_DESIGN §2.3/§4.2/§5.1/§7.3/§8、USER_GUIDE §2.2/§4.1。经两轮独立代理验证后追加修复：切换提供商往返不再丢失已保存的 `apiBase`/`model`；`request()` 返回 false 时用 `contains()` 复核兜底；地址有效性校验加固（只有协议 / 协议后多余斜杠 / 非 http(s) 协议 / 主机名畸形的地址不再被规范化成垃圾值落库）；`patternOf()` 生成匹配模式时剔除端口；误填完整端点与不可授权的明文 http 域名在保存前拦截 |
+| v1.4 | 2026-10-19 | 修复「生成失败：API 返回内容为空」高频问题（非评审条目）：`background/api.js` 新增重试与降级层（`CONSTANTS.API_RETRY`：3 次尝试、800/2000ms 退避、`max_tokens` 上限 8192），把失败按 `network`/`http`/`param`/`gateway`/`empty`/`format`/`length`/`filter` 分类（其余确定性失败保持无 kind 直出），仅对抖动类重试，重试时关闭 `response_format` 并追加「只输出 JSON」提醒、截断时放宽 `max_tokens`；识别网关 200 + `error` 体、`refusal`/`content_filter`，Claude 改为取 `content` 数组中的 `text` 块（不再写死 `content[0]`）；`maxTokens` 默认值 3072 → 4096、设置页上限 4096 → 8192。用一次性 Node harness（桩 fetch 驱动真实 `api.js`，15 个场景）验证：空返回重试成功、连续失败文案可操作、安全拦截不重试、401/普通 400 不重试、thinking 块不再误判为空。同步 manifest 1.1.1、TECH_DESIGN §4.2/§5.1/§6.4/§8 与版本号、USER_GUIDE §2.3/§4.1/§5 Q6、ROADMAP |

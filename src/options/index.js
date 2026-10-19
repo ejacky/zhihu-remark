@@ -53,7 +53,7 @@
     renderModelField(config.provider, config.model);
     document.getElementById('temperature').value = config.temperature ?? 0.7;
     document.getElementById('temperatureValue').textContent = config.temperature ?? 0.7;
-    document.getElementById('maxTokens').value = config.maxTokens || 3072;
+    document.getElementById('maxTokens').value = config.maxTokens || 4096;
 
     // 风格
     document.querySelectorAll('.style-card').forEach(card => {

@@ -27,7 +27,7 @@ const CONSTANTS = {
     model: 'deepseek-v4-pro',
     // 生成参数
     temperature: 0.7,
-    maxTokens: 3072,
+    maxTokens: 4096,
     // 反驳风格: 'gentle' | 'direct' | 'academic'
     style: 'gentle',
     // 错误类型开关
@@ -49,6 +49,16 @@ const CONSTANTS = {
     },
     // 完整性检查严格程度
     strictness: 'standard'
+  },
+
+  // API 失败重试策略
+  //
+  // 空返回 / 截断 / 网关抖动属于「概率性、再试一次大概率能过」的失败，因此自动退避重试；
+  // 鉴权失败、域名未授权、安全拦截等确定性失败不重试（kind 见 background/api.js 的分类表）。
+  API_RETRY: {
+    maxAttempts: 3,        // 总尝试次数（首次 + 最多 2 次重试）
+    delaysMs: [800, 2000], // 与第 N 次失败对应，实际等待带 ±20% 抖动
+    maxTokensCeiling: 8192 // 截断后自动放宽 max_tokens 的硬上限
   },
 
   // 提供商默认配置

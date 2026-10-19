@@ -1,7 +1,7 @@
 # 知乎反驳助手 - 技术设计文档
 
-> 版本：v1.0.0  
-> 更新日期：2026-05-11
+> 版本：v1.1.1  
+> 更新日期：2026-10-19
 
 ---
 
@@ -257,7 +257,7 @@ Body:
     { "role": "user", "content": "..." }
   ],
   "temperature": 0.7,
-  "max_tokens": 2048,
+  "max_tokens": 4096,
   "response_format": { "type": "json_object" }
 }
 ```
@@ -276,7 +276,7 @@ Body:
     { "role": "user", "content": "..." }
   ],
   "temperature": 0.7,
-  "max_tokens": 2048,
+  "max_tokens": 4096,
   "response_format": { "type": "json_object" }
 }
 ```
@@ -295,7 +295,7 @@ Body:
     { "role": "user", "content": "..." }
   ],
   "temperature": 0.7,
-  "max_tokens": 2048,
+  "max_tokens": 4096,
   "response_format": { "type": "json_object" }
 }
 ```
@@ -310,7 +310,7 @@ Headers:
 Body:
 {
   "model": "claude-3-5-sonnet-20241022",
-  "max_tokens": 2048,
+  "max_tokens": 4096,
   "system": "...",
   "messages": [{ "role": "user", "content": "..." }]
 }
@@ -338,7 +338,7 @@ Body:
   "model": "kimi-k2.6",
   "messages": [ ... ],
   "temperature": 0.7,
-  "max_tokens": 3072
+  "max_tokens": 4096
 }
 ```
 
@@ -349,6 +349,32 @@ Body:
 > 另：Go 文档建议客户端用自己的 User-Agent 标识自身。Chrome 不允许 `fetch` 设置 `User-Agent`
 > （属 forbidden request header），若网关后续强制校验该头，需要额外申请 `declarativeNetRequest`
 > 权限并通过 `modifyHeaders` 规则改写。
+
+#### 失败重试与降级（`background/api.js`）
+
+空返回、输出被截断、网关抖动属于「再试一次大概率能过」的失败，`background/api.js` 会按
+`CONSTANTS.API_RETRY`（`maxAttempts: 3`、`delaysMs: [800, 2000]`、`maxTokensCeiling: 8192`）
+自动退避重试（等待带 ±20% 抖动，`Retry-After` ≤3s 时优先采用）；鉴权失败、域名未授权、
+安全拦截等**确定性失败不重试**，立即抛出可操作提示。
+
+| 失败原因（kind） | 判定依据 | 是否重试 | 重试时的请求变化 |
+|------------------|----------|----------|------------------|
+| `network` | `fetch` 抛异常（断网 / DNS / 连接被掐） | ✅ | 无 |
+| `http` | HTTP 429 / ≥500 | ✅ | 无 |
+| `param` | HTTP 400/422 且响应体提到 `response_format`、`json_object`、`max_tokens` | ✅ | 关闭 json 模式，或把 token 上限退回用户设定值 |
+| `gateway` | HTTP 200 但响应体是 `{ error }`、响应体无法解析、没有 `choices` / `content` | ✅ | 无 |
+| `empty` | 200 且正文为空（既非 `length` 也非拒答） | ✅ | 关闭 `response_format` + 追加「只输出 JSON」提醒 |
+| `format` | 有正文但 `Utils.extractJSON` / 结构校验失败 | ✅ | 关闭 `response_format` |
+| `length` | `finish_reason: length`，或思考型模型只返回 `reasoning_content` / `thinking` 块 | ✅ | `max_tokens` ×2（上限 8192） |
+| `filter` | `finish_reason: content_filter`、`message.refusal` 非空、Claude `stop_reason: refusal` | ❌ | — |
+| `http` / 无 kind | 401/403/404 等其它 4xx、API Key 未配置、域名未授权、provider 不支持 | ❌ | — |
+
+> 起因：DeepSeek 官方文档已说明「使用 JSON Output 时 API 有概率返回空 content」，官方建议改 prompt 或重试，
+> 而扩展默认走 DeepSeek + `json_object`，因此 `empty` 是第一大失败原因，重试时关闭 `response_format` 正对它。
+> 另一条重要规则：`finish_reason: length` 但 JSON 结构仍完整（`Utils.extractJSON` 的补全能力可解析）的响应
+> **按成功采用**，避免把本可用的结果判成失败而白烧重试。
+> 重试只在后台进行，不上报额外消息给内容脚本；最终失败仍走 `{ success: false, error }`，
+> 由面板渲染为「生成失败：…」并附带「🔄 重试」按钮。
 
 ### 4.3 AI 响应格式
 
@@ -385,7 +411,7 @@ interface AIResponse {
   "apiBase": "",
   "model": "deepseek-v4-pro",
   "temperature": 0.7,
-  "maxTokens": 3072,
+  "maxTokens": 4096,
   "style": "gentle",
   "errorTypes": {
     "factError": true,
@@ -465,7 +491,7 @@ interface AIResponse {
 
 - 正文截断：> 6000 字符使用简化 Prompt
 - 反驳长度：上限 500 字，**不设下限**（一句话能说清就一句话，禁止为凑长度注水）
-- Max Tokens：默认 3072
+- Max Tokens：默认 4096，设置页可调 256–8192；输出被截断时自动放宽（×2，上限 8192）后重试
 
 ---
 
@@ -510,6 +536,10 @@ interface AIResponse {
 | API Key 未配置 | 提示用户进入设置页面 |
 | 自定义 API 域名（或内置提供商改写后的新域名）未授权 | 保存时提示重新授权（拒绝则不保存）；请求前二次校验，返回可操作提示 |
 | API 调用失败 | 显示具体错误信息（HTTP 状态码 + 错误消息） |
+| API 返回内容为空 / 输出抖动 | 自动退避重试最多 2 次（重试时关闭 json 模式并追加「只输出 JSON」提醒）；仍失败时提示"API 返回内容为空（已自动重试 2 次）"，并说明常见于 JSON 模式偶发空返回 |
+| 输出被截断（`finish_reason: length`） | 自动放宽 `max_tokens`（×2，上限 8192）后重试；仍失败时提示调大 Max Tokens 或更换模型 |
+| 内容被安全策略拦截（`content_filter` / `refusal`） | **不重试**，明确提示更换模型或调整「自定义 Prompt 后缀」，避免把拦截伪装成空返回 |
+| 网关 200 带 `error` 体 / 响应体不可解析 | 暴露上游消息（`API 错误 (200): …`）并重试 |
 | 内容提取失败 | 提示刷新页面，多策略 fallback |
 | JSON 解析失败 | 提示"AI 返回格式错误"，记录原始内容 |
 | 评论框填充失败 | 自动复制到剪贴板，提示手动粘贴 |
