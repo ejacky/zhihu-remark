@@ -183,6 +183,15 @@
 
 ## 变更日志
 
+### v2.0.0-dev（2026-10-27，重构 B1，分支 `refactor/v2`，未发布）
+- ✅ 正文生成改为**纯文本**（去掉 `response_format`）＋ `reasoning_effort` 控制深度思考 ＋ `max_tokens` 16384，修复"每次生成都被截断 / 思考吃光预算"
+- ✅ Prompt 从 388 行 / 50 处约束精简为「三条判据 + 一个结构 + 一条纪律」（`src/shared/prompts.js` 约 100 行）
+- ✅ 截断改为确定性失败、不再重试（避免每次重试再烧 30~50 秒 + 数千思考 token）
+- ✅ 配置 schema v2 → v3：新增 `thinking`（深度思考开关，默认开，与升级前行为一致）
+- ✅ 面板加载态显示已等待秒数（深度思考通常 30~60 秒，原先只有静态"生成中"）
+- 📊 依据：B0 四路实测，同一篇回答评分 1 → 2 → **4.5**（`dist/b0/`，未入库）
+- ⏳ 未做：面板瘦身（B2）、配置项精简与 popup 合并（B3）、文档合并与文件合并（B4）
+
 ### v1.1.2 (2026-10-27) — 重构前基线
 - ✅ 配置结构引入 `configVersion` 与迁移链（`CONSTANTS.CONFIG_SCHEMA_VERSION` / `CONFIG_MIGRATIONS`）：旧版本数据在读取时自动迁移并回写，为后续重构存储层提供迁移起点
 - ✅ `customPromptSuffix` 补进 `DEFAULT_CONFIG`（此前只在 `options` 与 `prompt` 里用 `|| ''` 兜底，属"文档有、默认值无"的漏项）

@@ -243,6 +243,12 @@ Content Script ↔ Service Worker 通信：
 > `apiBase` 留空时才回退到 `PROVIDER_DEFAULTS[provider].apiBase`。
 > 因此官方换域名、模型改名或走代理 / 镜像时，用户在设置页就地修改即可，无需等扩展发版。
 
+> ⚠️ **v2.0 重构中（B1 已完成）**：下面 DeepSeek / Kimi / OpenAI 三节的请求体描述的是
+> v1.x 的 **JSON 模式**（`response_format` + `temperature` + 4096 tokens）。B0 实测证明这套
+> 组合会让模型把论证压成一句概述、且思考 token 吃光预算必然截断。正文生成现已改为
+> **纯文本 + `reasoning_effort` + 16384 预算**，最新请求形态见本节末尾「v2.0 正文生成」小节。
+> 下方三节待 B4 文档合并时一并删除。
+
 #### DeepSeek Chat Completions（OpenAI 兼容）
 ```
 POST https://api.deepseek.com/v1/chat/completions
@@ -376,6 +382,34 @@ Body:
 > 重试只在后台进行，不上报额外消息给内容脚本；最终失败仍走 `{ success: false, error }`，
 > 由面板渲染为「生成失败：…」并附带「🔄 重试」按钮。
 
+#### v2.0 正文生成（非 JSON 模式）
+
+B1 起，OpenAI 兼容通路（OpenAI / DeepSeek / Kimi / 自定义）的正文生成请求改为：
+
+```
+POST {apiBase}/chat/completions
+Body:
+{
+  "model": "deepseek-flash 或 deepseek-v4.1-flash（取决于用户配置）",
+  "messages": [{ "role": "system", "content": "<约 30 行精简 Prompt>" },
+               { "role": "user", "content": "<标题 + 日期 + 正文>" }],
+  "max_tokens": 16384,
+  "reasoning_effort": "high"      // 关闭深度思考时为 "none"
+}
+```
+
+| 决策 | 原因（B0 实测，同一篇回答四路对比） |
+|---|---|
+| 去掉 `response_format` | 开 JSON：1 段、被压成概述、评分 1/5；关 JSON：6 段、逐条对账、评分 4.5/5 |
+| 去掉 `temperature` | 思考模式下官方静默忽略，传了也不生效 |
+| `max_tokens` 提到 16384 | 思考与正文共用预算：实测思考 2300~3500 + 正文 ~800，4096 必然 `finish_reason=length` |
+| 新增 `reasoning_effort` | `none` 关闭思考（1~3 秒），`high` 开启（30~50 秒）；网关与官方站都接受 |
+| 截断不重试 | 截断是预算问题（确定性），重试只会再烧一遍思考 token |
+| 只取 `content` | `reasoning_content` 是思考过程，不作为输出；正文包装由 `API._wrapRebuttal()` 完成 |
+
+> 说明：`analysis` / `errors` / `confidence` 三个字段成为空壳（`hasErrors: true`、其余为空），
+> 面板在没有结构化数据时跳过标签、错误详情与摘要，只渲染正文。字段本身待 B2 面板重做时删除。
+
 ### 4.3 AI 响应格式
 
 ```typescript
@@ -406,13 +440,14 @@ interface AIResponse {
 #### 配置 (zhihu_remark_config)
 ```json
 {
-  "configVersion": 2,
+  "configVersion": 3,
   "provider": "deepseek",
   "apiKey": "sk-...",
   "apiBase": "",
   "model": "deepseek-v4-pro",
   "temperature": 0.7,
   "maxTokens": 4096,
+  "thinking": true,
   "style": "gentle",
   "errorTypes": {
     "factError": true,
@@ -437,7 +472,8 @@ interface AIResponse {
 > `apiBase` 对**所有**提供商都可填写（含内置提供商），用于覆盖官方地址（代理 / 镜像 / 本地网关 / 换域名）；
 > 留空表示沿用 `PROVIDER_DEFAULTS[provider].apiBase`。保存时会规范化为「含协议、无末尾斜杠」的形式（见 7.3）。
 > `model` 为自由文本，`PROVIDER_DEFAULTS[provider].models` 仅作为设置页的输入建议（datalist）。
-> `configVersion` 是配置结构版本，当前为 `2`（见 5.2 迁移策略）；业务代码不要手写这个数字，一律读 `CONSTANTS.CONFIG_SCHEMA_VERSION`。
+> `configVersion` 是配置结构版本，当前为 `3`（见 5.2 迁移策略）；业务代码不要手写这个数字，一律读 `CONSTANTS.CONFIG_SCHEMA_VERSION`。
+> `thinking` 为深度思考开关（v3 新增）：`true` 走推理（30~50 秒），`false` 直出（1~3 秒）；`maxTokens` 只作下限保护，正文生成实际预算见 `CONSTANTS.GENERATE_MAX_TOKENS`。
 
 #### 历史记录项 (zhihu_remark_history)
 ```json
@@ -544,6 +580,10 @@ interface AIResponse {
 ---
 
 ## 8. 错误处理
+
+> ⚠️ **v2.0 变更**：下表中 `empty` / `format` / `length` 三行的"重试时关闭 json 模式""放宽 max_tokens 后重试"
+> 只适用于 v1.x 的 JSON 模式通路。B1 起正文生成不走 JSON，`length` 视为**确定性失败、不再重试**，
+> `empty` 直接提示"关闭深度思考或调大 Max Tokens"。表格待 B4 文档合并时重写。
 
 | 场景 | 处理方式 |
 |------|----------|

@@ -23,17 +23,23 @@ const CONSTANTS = {
   // 里补一条「源版本 → 下一版本」的迁移函数。旧版本数据由 Storage 在读取时自动迁移
   // 并回写，用户不需要重配。新增字段只做「补默认值」时也建议升版本，方便日后判断
   // 用户数据是在哪一版结构下写入的。
-  CONFIG_SCHEMA_VERSION: 2,
+  CONFIG_SCHEMA_VERSION: 3,
 
   // 配置迁移表：键是「源版本」，值是该版本升级到下一版本的函数
   //
   // 约定：迁移函数必须幂等，且只做「补齐 / 改名 / 换结构」，不做业务判断。
   // v1 → v2：customPromptSuffix 自 v1.3 起就在读写，但一直没进默认值（缺字段时
   //          UI 与 Prompt 各自用 || '' 兜底），这里补成正式字段。
+  // v2 → v3：新增 thinking（深度思考开关），默认开启——与升级前的实际行为一致
+  //          （正文生成改为非 JSON 模式后，这个开关才有意义）。
   CONFIG_MIGRATIONS: {
     1: (config) => ({
       ...config,
       customPromptSuffix: typeof config.customPromptSuffix === 'string' ? config.customPromptSuffix : ''
+    }),
+    2: (config) => ({
+      ...config,
+      thinking: typeof config.thinking === 'boolean' ? config.thinking : true
     })
   },
 
@@ -46,8 +52,10 @@ const CONSTANTS = {
     apiBase: '', // 留空使用所选提供商的内置地址；填写则覆盖（代理 / 镜像 / 本地网关 / 官方换域名）
     model: 'deepseek-v4-pro',
     // 生成参数
-    temperature: 0.7,
-    maxTokens: 4096,
+    temperature: 0.7, // 仅非思考模式生效；思考模式下官方忽略该值
+    maxTokens: 4096,  // 用户可调值的下限保护见 GENERATE_MAX_TOKENS
+    // 深度思考：开启后模型先推理再作答（30~50 秒），关闭后 1~3 秒出结果
+    thinking: true,
     // 反驳风格: 'gentle' | 'direct' | 'academic'
     style: 'gentle',
     // 错误类型开关
@@ -82,6 +90,14 @@ const CONSTANTS = {
     delaysMs: [800, 2000], // 与第 N 次失败对应，实际等待带 ±20% 抖动
     maxTokensCeiling: 8192 // 截断后自动放宽 max_tokens 的硬上限
   },
+
+  // 正文生成的 token 预算
+  //
+  // 思考模式与正文共用 completion_tokens：实测同一篇回答思考用掉 2300~3500 tokens，
+  // 正文 500~600 字（约 800 tokens）。原先固定 4096 会让思考把预算吃光，
+  // 表现为 finish_reason=length、正文半截、甚至空返回（B0 实测 v1 必截断）。
+  // 用户配置的 maxTokens 只作为下限保护，低于该值时按该值执行。
+  GENERATE_MAX_TOKENS: 16384,
 
   // 提供商默认配置
   //

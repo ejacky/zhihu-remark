@@ -116,6 +116,15 @@ const UI = {
     let dragOffsetX = 0;
     let dragOffsetY = 0;
 
+    // 生成中的计时器（深度思考要等 30~50 秒，必须让用户看到进展）
+    let loadingTimer = null;
+    const stopLoadingTimer = () => {
+      if (loadingTimer) {
+        clearInterval(loadingTimer);
+        loadingTimer = null;
+      }
+    };
+
     header.addEventListener('mousedown', (e) => {
       // 只有点击标题栏空白处或文字时才拖动，不响应关闭按钮
       if (e.target === closeBtn) return;
@@ -184,6 +193,7 @@ const UI = {
 
     // 统一关闭面板
     const closePanel = () => {
+      stopLoadingTimer();
       UI._removePanel(panel);
       document.removeEventListener('keydown', escHandler);
       if (onDismiss) onDismiss();
@@ -212,17 +222,30 @@ const UI = {
       });
 
       // 清空内容区
+      stopLoadingTimer();
       contentArea.innerHTML = '';
       actionsArea.innerHTML = '';
 
       // 无数据 / 加载中 / 错误 / 有数据
       if (!result || result.loading) {
-        // 加载中
+        // 加载中：显示已等待时长，超过 20 秒给一句预期说明
+        const startedAt = Date.now();
         const loadingText = Utils.createElement('div', {
           className: 'zhihu-remark-panel__loading-text',
-          textContent: `正在生成 ${CONSTANTS.REBUTTAL_STYLES[currentStyle]?.name || ''}风格的反驳...`
+          textContent: `正在思考…已 0 秒`
         });
         contentArea.appendChild(loadingText);
+
+        loadingTimer = setInterval(() => {
+          if (!loadingText.isConnected) {
+            stopLoadingTimer();
+            return;
+          }
+          const secs = Math.round((Date.now() - startedAt) / 1000);
+          loadingText.textContent = secs > 20
+            ? `正在深度思考…已 ${secs} 秒（通常 30~60 秒，可以先干别的）`
+            : `正在思考…已 ${secs} 秒`;
+        }, 1000);
       } else if (result.error) {
         // 生成失败
         const errorBox = Utils.createElement('div', {

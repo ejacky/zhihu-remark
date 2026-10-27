@@ -55,22 +55,25 @@ const API = {
       || CONSTANTS.PROVIDER_DEFAULTS[provider]?.apiBase
       || '';
     const model = config.model || CONSTANTS.PROVIDER_DEFAULTS[provider]?.models?.[0] || CONSTANTS.DEFAULT_CONFIG.model;
-    const temperature = config.temperature ?? CONSTANTS.DEFAULT_CONFIG.temperature;
-    const baseMaxTokens = config.maxTokens ?? CONSTANTS.DEFAULT_CONFIG.maxTokens;
 
-    // 获取激活的错误类型
+    // token 预算：思考与正文共用 completion_tokens，只给 4096 会被思考吃光
+    // （实测思考 2300~3500 + 正文 ~800）。用户填的值只作下限保护。
+    const baseMaxTokens = Math.max(
+      Number(config.maxTokens) || 0,
+      CONSTANTS.GENERATE_MAX_TOKENS || 16384
+    );
+
+    // 获取激活的错误类型（当前正文生成不再产出结构化错误清单，保留用于提示词兼容）
     const activeErrorTypes = Object.entries(config.errorTypes || {})
       .filter(([_, enabled]) => enabled)
       .map(([key]) => key);
 
-    // 截断内容
-    const text = Utils.truncateText(content.text, 6000);
+    // 正文截断：上下文已是 1M 级别，24000 字只用来防极端长文烧钱
+    const text = Utils.truncateText(content.text, 24000);
     const truncatedContent = { ...content, text };
 
     const systemPrompt = Prompts.getSystemPrompt(config.style, config, truncatedContent);
-    let userPrompt = text.length > 3000
-      ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
-      : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
+    let userPrompt = Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
 
     if (regenerateHint) {
       userPrompt += '\n\n' + regenerateHint;
@@ -88,30 +91,36 @@ const API = {
       'Authorization': `Bearer ${apiKey}`
     }, content);
 
-    // 重试过程中可调整的请求状态（由 _applyRetryPolicy 按失败原因修改）
+    // 重试过程中可调整的请求状态
     const state = {
-      jsonMode: provider !== 'custom', // DeepSeek 和 Kimi 均支持 json_object 模式
       maxTokens: baseMaxTokens,
-      nudge: false
+      // 深度思考开关：none 关闭（1~3 秒），high 开启（30~50 秒）
+      effort: config.thinking === false ? 'none' : 'high'
     };
 
     return this._withRetry(async () => {
       const requestBody = {
         model,
-        messages: state.nudge ? this._withJsonNudge(messages) : messages,
-        temperature,
-        max_tokens: state.maxTokens
+        messages,
+        max_tokens: state.maxTokens,
+        reasoning_effort: state.effort
       };
-
-      if (state.jsonMode) {
-        requestBody.response_format = { type: 'json_object' };
-      }
 
       const data = await this._postJson(`${apiBase}/chat/completions`, headers, requestBody);
       const { text: rawContent, finishReason } = this._extractOpenAIResult(data, state.maxTokens);
 
-      return this._acceptOrThrow(rawContent, finishReason, state.maxTokens);
+      // 截断是预算问题（确定性），重试只会再烧一遍思考 token，因此不重试
+      if (finishReason === 'length') {
+        throw this._fail(`生成被截断：思考与正文共用 ${state.maxTokens} tokens 预算`, 'length', {
+          retryable: false,
+          finishReason,
+          hint: '在设置里调大 Max Tokens，或关闭深度思考后重试'
+        });
+      }
+
+      return this._wrapRebuttal(rawContent);
     }, {
+      attempts: 2, // 思考模式单次 30~50 秒，重试次数必须收紧
       onRetry: (error) => this._applyRetryPolicy(state, error, baseMaxTokens)
     });
   },
@@ -683,6 +692,39 @@ const API = {
     if (await HostAccess.has(origin)) return;
 
     throw new Error(`未授权访问 ${origin}。请打开扩展设置页重新保存配置，并在弹窗中点击「允许」`);
+  },
+
+  /**
+   * 把纯文本响应包装成面板 / 历史记录需要的结构
+   *
+   * 正文生成已不走 JSON 模式（JSON Output 会把段落、对账式论证压平成一句概述），
+   * 因此 analysis / errors / confidence 只保留空壳：面板在没有结构化数据时
+   * 会自动跳过标签、错误详情与摘要区块，只渲染反驳正文。
+   *
+   * @private
+   */
+  _wrapRebuttal(rawContent) {
+    let text = String(rawContent || '')
+      .replace(/^```[a-zA-Z]*\s*/, '')
+      .replace(/\s*```$/, '')
+      .trim();
+
+    // 模型偶尔会加一句前缀说明（"评论："），剥掉
+    text = text.replace(/^(反驳|评论|回复|答案)[：:]\s*/, '').trim();
+
+    if (!text) {
+      throw this._fail('模型没有返回正文（思考可能占满了预算）', 'empty', {
+        retryable: false,
+        hint: '关闭深度思考或调大 Max Tokens 后重试'
+      });
+    }
+
+    return {
+      analysis: { hasErrors: true, errorTypes: [], summary: '' },
+      errors: [],
+      rebuttal: text,
+      confidence: ''
+    };
   },
 
   /**
