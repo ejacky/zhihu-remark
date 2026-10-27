@@ -10,6 +10,9 @@ const Injector = {
   // 已关闭面板的状态缓存（按回答内容标识）
   _panelCache: new Map(),
 
+  // 「换个说法」时附带的提示：换角度重写，避免和上一版雷同
+  REGENERATE_HINT: '换一个角度、换一种说法重写这条评论，不要和上一版本雷同。',
+
   /**
    * 扫描并注入按钮到所有回答的评论区域
    */
@@ -155,11 +158,11 @@ const Injector = {
       }
 
       const answerId = this._getAnswerId(content);
-      const cachedState = this._panelCache.get(answerId);
+      const cached = this._panelCache.get(answerId);
 
-      if (cachedState) {
+      if (cached) {
         // 有缓存：直接恢复面板，不重新生成
-        this._openAnalysisPanel(content, answerElement, cachedState.styleResults, cachedState.currentStyle, cachedState.panelState);
+        this._openPanel(content, answerElement, cached.state, cached.cachedAt);
         return;
       }
 
@@ -180,176 +183,90 @@ const Injector = {
    * 执行 AI 生成反驳（提取为独立方法供复用）
    */
   async _executeGenerate(content, answerElement) {
-    // 获取当前配置的风格
+    // 获取配置里的默认风格（面板不再提供风格切换，风格在设置页统一设定）
     const configResponse = await this._sendMessage({ type: CONSTANTS.MESSAGE_TYPES.GET_CONFIG });
-    const defaultStyle = configResponse.success ? configResponse.data.style : 'gentle';
+    const style = configResponse.success ? configResponse.data.style : 'gentle';
 
-    // 初始化多风格缓存
-    const styleResults = {
-      [defaultStyle]: null
-    };
-    let currentStyle = defaultStyle;
+    // 先开面板（loading 态）再请求：深度思考要等 30~50 秒，用户必须看到计时
+    const panel = this._openPanel(
+      content,
+      answerElement,
+      { rebuttal: '', loading: true, error: null, style },
+      null
+    );
 
-    // 首次生成
-    const loading = UI.createLoading('正在分析回答内容...');
+    await this._generateInto(panel, content, style, '');
+  },
+
+  /**
+   * 发起一次生成并写回面板
+   * @param {Object} panel - UI.createPanel 返回的控制器
+   * @param {Object} content - 回答内容
+   * @param {string} style - 风格
+   * @param {string} regenerateHint - 重新生成提示（空字符串表示首次生成）
+   */
+  async _generateInto(panel, content, style, regenerateHint) {
     try {
-      loading.updateText('正在调用 AI 分析...');
-      const response = await this._sendGenerateMessage(content, defaultStyle);
+      const response = await this._sendGenerateMessage(content, style, regenerateHint || undefined);
 
       if (!response.success) {
         throw new Error(response.error || '生成失败');
       }
 
-      styleResults[defaultStyle] = {
-        analysis: response.data.analysis,
+      panel.update({
         rebuttal: response.data.rebuttal,
-        historyId: response.data.historyId,
-        feedback: null,
         loading: false,
-        error: null
-      };
-
-      if (!response.data.analysis.hasErrors) {
-        UI.showWarning('未检测到明显错误，未生成反驳内容');
-      }
+        error: null,
+        historyId: response.data.historyId,
+        style
+      });
     } catch (error) {
-      styleResults[defaultStyle] = {
-        analysis: null,
+      panel.update({
         rebuttal: '',
         loading: false,
-        error: error.message || '生成失败'
-      };
-      UI.showError(error.message || '生成失败，请检查配置后重试');
-    } finally {
-      loading.remove();
+        error: error.message || '生成失败',
+        style
+      });
     }
-
-    // 打开面板
-    this._openAnalysisPanel(content, answerElement, styleResults, currentStyle);
   },
 
   /**
-   * 打开/管理分析面板（支持多风格切换）
+   * 打开反驳卡片
+   *
+   * 面板只保留一份状态（不再按风格各存一份），缓存也按回答维度存这一份。
+   *
+   * @param {Object} content - 回答内容
+   * @param {Element} answerElement - 回答 DOM
+   * @param {Object} state - { rebuttal, loading, error, style }
+   * @param {number|null} [cachedAt] - 命中缓存时的时间戳
+   * @returns {Object} 面板控制器
    */
-  _openAnalysisPanel(content, answerElement, styleResults, currentStyle, initialPanelState = null) {
-    let panelCtrl = null;
+  _openPanel(content, answerElement, state, cachedAt = null) {
     const answerId = this._getAnswerId(content);
+    let panelCtrl = null;
 
-    const savePanelState = () => {
-      if (panelCtrl) {
-        this._panelCache.set(answerId, {
-          styleResults: { ...styleResults },
-          currentStyle,
-          panelState: panelCtrl.getState()
-        });
-      }
-    };
-
-    const refreshPanel = () => {
-      if (panelCtrl) {
-        panelCtrl.update({ styleResults, currentStyle });
-      }
-    };
-
-    const generateForStyle = async (style, isRegenerate, customHint = '') => {
-      // 标记该风格为加载中
-      styleResults[style] = { analysis: null, rebuttal: '', loading: true, error: null };
-      refreshPanel();
-
-      try {
-        let regenerateHint = isRegenerate
-          ? '（这是重新生成请求。请换一个角度、换一种表达方式重新生成反驳内容，避免与之前的版本雷同。）'
-          : undefined;
-
-        if (customHint) {
-          const customHintText = `此外，用户针对本次重新生成提出了以下要求，请重点满足：${customHint}`;
-          regenerateHint = regenerateHint ? `${regenerateHint}\n\n${customHintText}` : customHintText;
-        }
-
-        const response = await this._sendGenerateMessage(content, style, regenerateHint);
-
-        if (!response.success) {
-          throw new Error(response.error || '生成失败');
-        }
-
-        styleResults[style] = {
-          analysis: response.data.analysis,
-          rebuttal: response.data.rebuttal,
-          historyId: response.data.historyId,
-          feedback: null,
-          loading: false,
-          error: null,
-          lastCustomHint: customHint || null
-        };
-      } catch (error) {
-        styleResults[style] = {
-          analysis: null,
-          rebuttal: '',
-          loading: false,
-          error: error.message || '生成失败'
-        };
-      }
-
-      refreshPanel();
-    };
-
-    panelCtrl = UI.createAnalysisPanel({
-      styleResults,
-      currentStyle,
-      initialState: initialPanelState,
-      onStyleChange: (style) => {
-        currentStyle = style;
-        if (!styleResults[style]) {
-          // 未生成过，自动触发
-          generateForStyle(style);
-        } else {
-          refreshPanel();
-        }
+    panelCtrl = UI.createPanel({
+      state,
+      cachedAt,
+      onRegenerate: () => {
+        panelCtrl.update({ rebuttal: '', loading: true, error: null });
+        this._generateInto(panelCtrl, content, state.style || 'gentle', this.REGENERATE_HINT);
       },
-      onRegenerate: (style, customHint) => {
-        generateForStyle(style, true, customHint);
-      },
-      onUse: async (style) => {
-        const result = styleResults[style];
-        if (result && result.rebuttal) {
-          await this._fillCommentBox(answerElement, result.rebuttal);
-          UI.showSuccess('反驳内容已填入评论框，请审核后发布');
-        }
+      onUse: async (rebuttal) => {
+        await this._fillCommentBox(answerElement, rebuttal);
+        UI.showSuccess('反驳内容已填入评论框，请审核后发布');
         // 使用后清除缓存，避免下次打开时仍显示旧结果
         this._panelCache.delete(answerId);
       },
-      onFeedback: async (style, feedback) => {
-        const result = styleResults[style];
-        if (!result || !result.historyId) {
-          UI.showWarning('无法记录反馈，请稍后再试');
-          return;
-        }
-
-        try {
-          const response = await this._sendMessage({
-            type: CONSTANTS.MESSAGE_TYPES.UPDATE_FEEDBACK,
-            data: { historyId: result.historyId, feedback }
-          });
-
-          if (response.success) {
-            styleResults[style] = {
-              ...result,
-              feedback
-            };
-            refreshPanel();
-            UI.showSuccess('反馈已记录，下次重新生成将参考您的意见');
-          } else {
-            UI.showError(response.error || '反馈记录失败');
-          }
-        } catch (err) {
-          UI.showError(err.message || '反馈记录失败');
-        }
-      },
       onDismiss: () => {
-        savePanelState();
-        panelCtrl = null;
+        const latest = panelCtrl.getState();
+        if (latest.rebuttal && !latest.error) {
+          this._panelCache.set(answerId, { state: latest, cachedAt: Date.now() });
+        }
       }
     });
+
+    return panelCtrl;
   },
 
   /**
