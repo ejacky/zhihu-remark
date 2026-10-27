@@ -1,7 +1,7 @@
 # 知乎反驳助手 - 技术设计文档
 
-> 版本：v1.1.1  
-> 更新日期：2026-10-19
+> 版本：v1.1.2  
+> 更新日期：2026-10-27
 
 ---
 
@@ -406,6 +406,7 @@ interface AIResponse {
 #### 配置 (zhihu_remark_config)
 ```json
 {
+  "configVersion": 2,
   "provider": "deepseek",
   "apiKey": "sk-...",
   "apiBase": "",
@@ -436,6 +437,7 @@ interface AIResponse {
 > `apiBase` 对**所有**提供商都可填写（含内置提供商），用于覆盖官方地址（代理 / 镜像 / 本地网关 / 换域名）；
 > 留空表示沿用 `PROVIDER_DEFAULTS[provider].apiBase`。保存时会规范化为「含协议、无末尾斜杠」的形式（见 7.3）。
 > `model` 为自由文本，`PROVIDER_DEFAULTS[provider].models` 仅作为设置页的输入建议（datalist）。
+> `configVersion` 是配置结构版本，当前为 `2`（见 5.2 迁移策略）；业务代码不要手写这个数字，一律读 `CONSTANTS.CONFIG_SCHEMA_VERSION`。
 
 #### 历史记录项 (zhihu_remark_history)
 ```json
@@ -459,9 +461,21 @@ interface AIResponse {
 
 ### 5.2 存储策略
 
-- **chrome.storage.local**：所有数据本地存储，与 Chrome 用户账户同步
+- **chrome.storage.local**：所有数据仅存本机（**不随 Chrome 账户同步**），卸载扩展即丢失
 - **容量限制**：约 5-10MB，历史记录限制 10 条防止超限
 - **隐私**：不上传到任何远程服务器
+
+#### 配置迁移（configVersion）
+
+配置结构会变（字段增删改名、嵌套层级调整），因此存储里的配置带 `configVersion`：
+
+1. 结构每变更一次，`CONSTANTS.CONFIG_SCHEMA_VERSION` +1，并在 `CONSTANTS.CONFIG_MIGRATIONS` 里补一条 `源版本 → 下一版本` 的迁移函数。
+2. `Storage.getConfig()` 读取时先按版本链迁移，再与 `DEFAULT_CONFIG` 合并；**迁移过的结果立即回写**，避免每次读取重跑迁移。
+3. 没有版本号的旧数据视为 v1；版本比当前新（用户回退过扩展版本）按当前版本归一，只做默认值兜底。
+4. 迁移函数必须幂等，只做「补齐 / 改名 / 换结构」，不做业务判断；迁移函数缺失时跳过该版本而不是报错。
+5. `Storage.setConfig()` 无论入参带不带版本号，落盘前一律盖章为当前版本。
+
+> 全仓只有 `CONSTANTS.CONFIG_SCHEMA_VERSION` 一处定义版本号；`DEFAULT_CONFIG.configVersion` 在文件末尾由它赋值（对象字面量内不能自引用）。
 
 ---
 

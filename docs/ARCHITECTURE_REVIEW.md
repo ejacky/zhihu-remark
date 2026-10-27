@@ -2,7 +2,7 @@
 
 > 版本：v1.0
 > 评审日期：2026-10-10
-> 状态：评审完成，修复进行中（已完成 1 / 26：P0-1 ✅）
+> 状态：评审完成，修复进行中（已完成 2 / 26：P0-1 ✅、P1-9 ✅）
 > 评审范围：全量源码（21 个文件，约 150KB）、`manifest.json`、`docs/` 全部文档、git 提交历史
 > 评审方式：静态通读 + 逐行比对（CSS 双真源、重复实现、死代码均已实际比对/检索验证）
 
@@ -99,7 +99,7 @@
 | P1-6 | 消息协议常量与工具函数三处重复 | 可读性 | B | ⬜ |
 | P1-7 | 配置项在 5 处重复枚举，新增一项需改 5 个文件 | 扩展性 | D | ⬜ |
 | P1-8 | Prompt 是 400 行单体模板字符串 | 可读性/维护性 | D | ⬜ |
-| P1-9 | 配置无版本号与迁移机制 | 扩展性 | B | ⬜ |
+| P1-9 | 配置无版本号与迁移机制 | 扩展性 | B | ✅ |
 | P1-10 | 死代码与冗余兼容分支 | 可读性 | A | ⬜ |
 
 ### 2.3 P2 体验与工程质量
@@ -352,7 +352,9 @@
 - **影响**：未来字段改名/迁移只能靠 `?.` 与 `!== false` 兼容，易出现"默认值静默覆盖用户配置"或反之。
 - **修复建议**：`DEFAULT_CONFIG` 补齐缺失字段；新增 `configVersion` 与 `migrations[]`，在 `getConfig` 中按版本执行迁移，并写单测。
 - **验收标准**：注入一个旧版本配置样本，`getConfig()` 输出符合当前 schema。
-- **状态**：⬜ 未开始
+- **状态**：✅ 已完成
+> 修复：`src/shared/constants.js` 新增 `CONFIG_SCHEMA_VERSION`（=2）与 `CONFIG_MIGRATIONS`（v1→v2 补 `customPromptSuffix`），`DEFAULT_CONFIG` 补齐 `customPromptSuffix`、`configVersion` 由 `CONFIG_SCHEMA_VERSION` 赋值（单一真源）；`src/background/storage.js` 新增 `_migrateConfig()`，`getConfig()` 迁移后立即回写、`setConfig()` 一律盖章当前版本，无版本号旧数据视为 v1、未来版本号归一为当前版本。
+> 验证：一次性 Node harness 桩 `chrome.storage.local` 驱动真实 `constants.js`/`storage.js`，7 组场景全通过（全新安装不产生多余回写、v1 数据保留用户值并补齐新字段、已迁移数据不重复回写、未来版本号归一、`setConfig` 未带版本号也落盘为当前版本、迁移函数缺失不报错、`DEFAULT_CONFIG` 自带版本号）；`node --check` 覆盖 14 个源文件无语法错误。Chrome 内实际加载回归**尚未执行**（待随重构基线版本一起验证）。
 
 ### P1-10 死代码与冗余兼容分支
 
@@ -473,7 +475,7 @@ src/
 | ID | 文档位置 | 现状 | 代码事实 | 关联项 | 状态 |
 |----|----------|------|----------|--------|------|
 | D-1 | `docs/TECH_DESIGN.md:3` | 版本 `v1.0.0` | `manifest.json:4` 为 `1.1.0` | — | ✅ 2026-10-19 已对齐（TECH_DESIGN 头部版本随 manifest 更新为 v1.1.1） |
-| D-2 | `docs/TECH_DESIGN.md:378` | "所有数据本地存储，与 Chrome 用户账户同步" | 使用 `chrome.storage.local`，**不随账户同步** | P0-7 | ⬜ |
+| D-2 | `docs/TECH_DESIGN.md:378` | "所有数据本地存储，与 Chrome 用户账户同步" | 使用 `chrome.storage.local`，**不随账户同步** | P0-7 | ✅ 2026-10-27 已修（§5.2 改为"仅存本机、不随账户同步"，并补迁移策略） |
 | D-3 | `docs/TECH_DESIGN.md:334`、4.2 节各示例 | `maxTokens: 2048` | `src/shared/constants.js:23` 默认 `3072`；`src/options/index.html:86` 默认 3072 | P1-7 | ✅ 2026-10-19 已修（§4.2 各示例与 §5.1 统一为实际默认值 4096；默认值本身同时提升为 4096、设置页上限 8192） |
 | D-4 | `docs/TECH_DESIGN.md:449-453` | 承诺"内容缓存 / 请求去重 / 历史分页加载 / 代码分割" | 均未实现（无缓存层、无去重、`getHistory` 一次性返回、共享模块全量注入） | P0-8, P0-9, P2-4 | ⬜ |
 | D-5 | `docs/TECH_DESIGN.md:222` | `SHOW_NOTIFICATION` 为 B→C 协议 | 无任何发送方 | P1-10 | ⬜ |
@@ -515,3 +517,4 @@ src/
 | v1.2 | 2026-10-10 | 新增能力（非评审条目）：OpenCode Go / Zen 网关适配 —— 新增 `shared/opencode.js`，`background/api.js` 自动附带 `x-opencode-session`（按回答派生稳定会话标识）；同步 PRD FR-006、TECH_DESIGN §2.1/§2.3/§4.2、USER_GUIDE §4.1 |
 | v1.3 | 2026-10-15 | 新增能力（非评审条目）：API Base URL 与模型名称对所有提供商开放手动填写（内置提供商也可指向代理 / 镜像 / 新域名，模型名可自由输入，候选列表改为 datalist 建议）；保存时按实际生效地址统一申请域名授权；同步 PRD FR-006/FR-012、TECH_DESIGN §2.3/§4.2/§5.1/§7.3/§8、USER_GUIDE §2.2/§4.1。经两轮独立代理验证后追加修复：切换提供商往返不再丢失已保存的 `apiBase`/`model`；`request()` 返回 false 时用 `contains()` 复核兜底；地址有效性校验加固（只有协议 / 协议后多余斜杠 / 非 http(s) 协议 / 主机名畸形的地址不再被规范化成垃圾值落库）；`patternOf()` 生成匹配模式时剔除端口；误填完整端点与不可授权的明文 http 域名在保存前拦截 |
 | v1.4 | 2026-10-19 | 修复「生成失败：API 返回内容为空」高频问题（非评审条目）：`background/api.js` 新增重试与降级层（`CONSTANTS.API_RETRY`：3 次尝试、800/2000ms 退避、`max_tokens` 上限 8192），把失败按 `network`/`http`/`param`/`gateway`/`empty`/`format`/`length`/`filter` 分类（其余确定性失败保持无 kind 直出），仅对抖动类重试，重试时关闭 `response_format` 并追加「只输出 JSON」提醒、截断时放宽 `max_tokens`；识别网关 200 + `error` 体、`refusal`/`content_filter`，Claude 改为取 `content` 数组中的 `text` 块（不再写死 `content[0]`）；`maxTokens` 默认值 3072 → 4096、设置页上限 4096 → 8192。用一次性 Node harness（桩 fetch 驱动真实 `api.js`，15 个场景）验证：空返回重试成功、连续失败文案可操作、安全拦截不重试、401/普通 400 不重试、thinking 块不再误判为空。同步 manifest 1.1.1、TECH_DESIGN §4.2/§5.1/§6.4/§8 与版本号、USER_GUIDE §2.3/§4.1/§5 Q6、ROADMAP |
+| v1.5 | 2026-10-27 | P1-9 修复完成（配置版本号与迁移链）；D-2 修正；发布治理补齐：manifest 升 1.1.2、打 `v1.1.1`/`v1.1.2` tag、归档可加载产物 |

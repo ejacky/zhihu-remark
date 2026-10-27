@@ -1,8 +1,8 @@
 # 知乎反驳助手 - 开发路线图
 
-> 版本：v1.0.0  
-> 更新日期：2026-05-11  
-> 状态：Phase 1-3 已完成，Phase 4 进行中
+> 版本：v1.1.2  
+> 更新日期：2026-10-27  
+> 状态：Phase 1-3 已完成，Phase 4 进行中；v1.1.2 为重构前基线版本
 
 ---
 
@@ -182,6 +182,18 @@
 ---
 
 ## 变更日志
+
+### v1.1.2 (2026-10-27) — 重构前基线
+- ✅ 配置结构引入 `configVersion` 与迁移链（`CONSTANTS.CONFIG_SCHEMA_VERSION` / `CONFIG_MIGRATIONS`）：旧版本数据在读取时自动迁移并回写，为后续重构存储层提供迁移起点
+- ✅ `customPromptSuffix` 补进 `DEFAULT_CONFIG`（此前只在 `options` 与 `prompt` 里用 `|| ''` 兜底，属"文档有、默认值无"的漏项）
+- ✅ 修正 `TECH_DESIGN` §5.2 "与 Chrome 用户账户同步"的错误描述（实际是 `storage.local`，不同步）
+- ✅ 打 `v1.1.1` / `v1.1.2` tag 并归档可加载产物，结束"38 次提交零 tag"状态
+
+### v1.1.1 (2026-10-19)
+- ✅ 修复「生成失败：API 返回内容为空」：新增重试与失败分类（`network`/`http`/`param`/`gateway`/`empty`/`format`/`length`/`filter`），空返回、截断、429/5xx 自动退避重试，确定性失败不重试
+- ✅ 重试时关闭 `response_format` 并追加「只输出 JSON」提醒；截断时放宽 `max_tokens`
+- ✅ 识别网关 200 + `error` 体、`refusal`/`content_filter`；Claude 取 `content` 数组中的 `text` 块
+- ✅ `maxTokens` 默认值 3072 → 4096，设置页上限 4096 → 8192
 
 ### v1.1.0 (2026-05-11)
 - ✅ 支持最新模型版本（DeepSeek V4、Kimi K2.6、Claude 4、GPT-5.5 等）

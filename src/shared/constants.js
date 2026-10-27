@@ -17,6 +17,26 @@ const CONSTANTS = {
     CACHE: 'zhihu_remark_cache'
   },
 
+  // 配置 schema 版本
+  //
+  // 配置结构（字段增删改名、嵌套层级调整）每变更一次就 +1，并在 CONFIG_MIGRATIONS
+  // 里补一条「源版本 → 下一版本」的迁移函数。旧版本数据由 Storage 在读取时自动迁移
+  // 并回写，用户不需要重配。新增字段只做「补默认值」时也建议升版本，方便日后判断
+  // 用户数据是在哪一版结构下写入的。
+  CONFIG_SCHEMA_VERSION: 2,
+
+  // 配置迁移表：键是「源版本」，值是该版本升级到下一版本的函数
+  //
+  // 约定：迁移函数必须幂等，且只做「补齐 / 改名 / 换结构」，不做业务判断。
+  // v1 → v2：customPromptSuffix 自 v1.3 起就在读写，但一直没进默认值（缺字段时
+  //          UI 与 Prompt 各自用 || '' 兜底），这里补成正式字段。
+  CONFIG_MIGRATIONS: {
+    1: (config) => ({
+      ...config,
+      customPromptSuffix: typeof config.customPromptSuffix === 'string' ? config.customPromptSuffix : ''
+    })
+  },
+
   // 默认配置
   DEFAULT_CONFIG: {
     // AI 提供商: 'openai' | 'anthropic' | 'deepseek' | 'kimi' | 'custom'
@@ -48,7 +68,9 @@ const CONSTANTS = {
       enableCompletenessCheck: true // 补充遗漏视角（动态完整性检查）
     },
     // 完整性检查严格程度
-    strictness: 'standard'
+    strictness: 'standard',
+    // 用户自定义 Prompt 后缀（拼接在 system prompt 末尾）
+    customPromptSuffix: ''
   },
 
   // API 失败重试策略
@@ -193,6 +215,10 @@ const CONSTANTS = {
     NOTIFICATION_DURATION: 3000
   }
 };
+
+// 默认配置里的 configVersion 直接取自 CONFIG_SCHEMA_VERSION
+// （对象字面量内不能自引用，所以在这里补一次，保持单一真源）
+CONSTANTS.DEFAULT_CONFIG.configVersion = CONSTANTS.CONFIG_SCHEMA_VERSION;
 
 // 导出（兼容内容脚本和模块）
 if (typeof module !== 'undefined' && module.exports) {
