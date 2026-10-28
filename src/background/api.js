@@ -57,23 +57,15 @@ const API = {
     const model = config.model || CONSTANTS.PROVIDER_DEFAULTS[provider]?.models?.[0] || CONSTANTS.DEFAULT_CONFIG.model;
 
     // token 预算：思考与正文共用 completion_tokens，只给 4096 会被思考吃光
-    // （实测思考 2300~3500 + 正文 ~800）。用户填的值只作下限保护。
-    const baseMaxTokens = Math.max(
-      Number(config.maxTokens) || 0,
-      CONSTANTS.GENERATE_MAX_TOKENS || 16384
-    );
-
-    // 获取激活的错误类型（当前正文生成不再产出结构化错误清单，保留用于提示词兼容）
-    const activeErrorTypes = Object.entries(config.errorTypes || {})
-      .filter(([_, enabled]) => enabled)
-      .map(([key]) => key);
+    // （实测思考 2300~3500 + 正文 ~800）。预算固定，不再暴露给用户。
+    const baseMaxTokens = CONSTANTS.GENERATE_MAX_TOKENS || 16384;
 
     // 正文截断：上下文已是 1M 级别，24000 字只用来防极端长文烧钱
     const text = Utils.truncateText(content.text, 24000);
     const truncatedContent = { ...content, text };
 
     const systemPrompt = Prompts.getSystemPrompt(config.style, config, truncatedContent);
-    let userPrompt = Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
+    let userPrompt = Prompts.getUserPrompt(truncatedContent);
 
     if (regenerateHint) {
       userPrompt += '\n\n' + regenerateHint;
@@ -138,19 +130,13 @@ const API = {
     const apiBase = HostAccess.normalizeApiBase(config.apiBase)
       || CONSTANTS.PROVIDER_DEFAULTS.anthropic.apiBase;
     const model = config.model || 'claude-3-5-sonnet-20241022';
-    const baseMaxTokens = config.maxTokens ?? CONSTANTS.DEFAULT_CONFIG.maxTokens;
+    const baseMaxTokens = CONSTANTS.GENERATE_MAX_TOKENS || 16384;
 
-    const activeErrorTypes = Object.entries(config.errorTypes || {})
-      .filter(([_, enabled]) => enabled)
-      .map(([key]) => key);
-
-    const text = Utils.truncateText(content.text, 6000);
+    const text = Utils.truncateText(content.text, 24000);
     const truncatedContent = { ...content, text };
 
     const systemPrompt = Prompts.getSystemPrompt(config.style, config, truncatedContent);
-    let userPrompt = text.length > 3000
-      ? Prompts.getCondensedUserPrompt(truncatedContent, activeErrorTypes)
-      : Prompts.getUserPrompt(truncatedContent, activeErrorTypes);
+    let userPrompt = Prompts.getUserPrompt(truncatedContent);
 
     if (regenerateHint) {
       userPrompt += '\n\n' + regenerateHint;
@@ -583,12 +569,13 @@ const API = {
   },
 
   /**
-   * 放宽 max_tokens（截断 / 思考占满预算时使用），不超过配置上限
+   * 放宽 max_tokens（仅 Anthropic 通路还会用到；OpenAI 通路的截断不再重试）
+   * 上限取正文预算的 2 倍，保证放宽时不会反而把预算改小。
    * @private
    */
   _escalateTokens(current) {
-    const ceiling = CONSTANTS.API_RETRY?.maxTokensCeiling ?? 8192;
-    const base = Number.isFinite(current) ? current : CONSTANTS.DEFAULT_CONFIG.maxTokens;
+    const base = Number.isFinite(current) ? current : (CONSTANTS.GENERATE_MAX_TOKENS || 16384);
+    const ceiling = (CONSTANTS.GENERATE_MAX_TOKENS || 16384) * 2;
     return Math.min(Math.max(base * 2, base + 512), ceiling);
   },
 

@@ -110,15 +110,12 @@ async function handleGenerateRebuttal(data, sender) {
 
     // 保存到历史记录
     let historyId = null;
-    if (config.features?.enableHistory !== false) {
+    if (config.enableHistory !== false) {
       const historyItem = await Storage.addHistoryItem({
         questionTitle: content.title,
         author: content.author,
         url: content.url,
-        hasErrors: result.analysis.hasErrors,
-        errorTypes: result.analysis.errorTypes,
-        rebuttal: result.rebuttal,
-        confidence: result.confidence
+        rebuttal: result.rebuttal
       });
       historyId = historyItem.id;
     }

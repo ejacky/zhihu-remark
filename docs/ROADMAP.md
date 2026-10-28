@@ -12,7 +12,7 @@ v2.0 重构在 `refactor/v2` 分支，`main` 停在 `v1.1.2`。
 | B2 | 面板：19 个可点元素 → 3 个 | ✅ |
 | — | Prompt 回归网 `tests/prompt/` | ✅ |
 | B3a | 删 popup，点图标直接开设置页；清理反馈链路（`UPDATE_FEEDBACK` / 历史反馈查询） | ✅ |
-| B3b | 设置页 25 项 → 4 项；配置 schema v4（删 `errorTypes` / `features` / `strictness` / `temperature` / `maxTokens`） | ⏳ |
+| B3b | 设置页 25 项 → 4 项；配置 schema v4（删 `errorTypes` / `features` / `strictness` / `temperature` / `maxTokens`） | ✅ |
 | B4 | 文档/文件合并，升 2.0.0 | ⏳ |
 
 ## 待办（按优先级）

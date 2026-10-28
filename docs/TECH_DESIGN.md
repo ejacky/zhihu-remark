@@ -149,25 +149,26 @@ Claude 走 `_callAnthropic`（`/v1/messages`，取 `content` 数组里的 `text`
 ### 5.1 数据模型
 
 ```jsonc
-// zhihu_remark_config
+// zhihu_remark_config（schema v4：8 个字段，没有别的）
 {
-  "configVersion": 3,
-  "provider": "deepseek", "apiKey": "", "apiBase": "", "model": "deepseek-v4-pro",
-  "temperature": 0.7, "maxTokens": 4096, "thinking": true,
-  "style": "gentle",
-  "errorTypes": { "factError": true, "...": true },
-  "features": { "showAnalysis": true, "...": true },
-  "strictness": "standard", "customPromptSuffix": ""
+  "configVersion": 4,
+  "provider": "deepseek",          // 高级项
+  "apiKey": "",
+  "apiBase": "",                   // 高级项，留空用内置地址
+  "model": "deepseek-v4-pro",
+  "thinking": true,                // 深度思考开关
+  "style": "gentle",               // 高级项：gentle | direct | academic | natural
+  "enableHistory": true,
+  "customPromptSuffix": ""         // 高级项
 }
 ```
 
-`errorTypes` / `features` / `strictness` 目前仍被读写，但生成链路已不使用（B3 删除）。
+v4 删掉了 `errorTypes` / `features` / `strictness` / `temperature` / `maxTokens`——面板与 Prompt 都不再需要它们；`features.enableHistory` 提到顶层。
 
 ```jsonc
 // zhihu_remark_history —— 数组，最多 10 条，倒序
 { "id": "...", "timestamp": 1715500000000, "questionTitle": "...", "author": "...",
-  "url": "...", "hasErrors": true, "errorTypes": [], "rebuttal": "...",
-  "confidence": "", "feedback": null }
+  "url": "...", "rebuttal": "..." }
 ```
 
 ### 5.2 存储策略

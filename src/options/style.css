@@ -495,6 +495,28 @@ body {
   background: #ffccc7;
 }
 
+/* 高级设置折叠区（B3 后设置页只剩这一处折叠） */
+.options-advanced {
+  margin: 24px 0;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  padding: 12px 16px;
+  background: #fafafa;
+}
+
+.options-advanced > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: #595959;
+  outline: none;
+}
+
+.options-advanced[open] > summary {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
 /* Responsive */
 @media (max-width: 640px) {
   .style-cards {
