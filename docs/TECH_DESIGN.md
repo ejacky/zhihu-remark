@@ -228,4 +228,3 @@ v4 删掉了 `errorTypes` / `features` / `strictness` / `temperature` / `maxToke
 - Service Worker 被回收时进行中的请求会断，用户看到的是失败 + 重试，不是静默卡住。
 - 思考模式偶发不触发（`reasoning_tokens=0` 时 8 秒出稿），质量会明显下降；目前只在测试脚本里识别，产品侧未处理。
 - Claude / 自定义通路仍是旧的 JSON 结构路径，与主链路不一致。
-- 样式有两份副本：`content/style.css` 与 `content/index.js` 的内联样式。

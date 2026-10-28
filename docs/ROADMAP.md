@@ -4,34 +4,38 @@
 
 ## 当前状态（2026-10-28）
 
-v2.0 重构在 `refactor/v2` 分支，`main` 停在 `v1.1.2`。
+v2.0.0 重构完成，在 `refactor/v2` 分支上；`main` 仍是 `v1.1.2`，合并后才会跟进。
 
 | 批次 | 内容 | 状态 |
 |---|---|---|
 | B1 | 生成链路：纯文本 + `reasoning_effort` + 16384 预算；Prompt 388 行 → 约 730 字符 | ✅ |
 | B2 | 面板：19 个可点元素 → 3 个 | ✅ |
-| — | Prompt 回归网 `tests/prompt/` | ✅ |
-| B3a | 删 popup，点图标直接开设置页；清理反馈链路（`UPDATE_FEEDBACK` / 历史反馈查询） | ✅ |
-| B3b | 设置页 25 项 → 4 项；配置 schema v4（删 `errorTypes` / `features` / `strictness` / `temperature` / `maxTokens`） | ✅ |
-| B4 | 文档/文件合并，升 2.0.0 | ⏳ |
+| — | Prompt 回归网 `tests/prompt/`（14 项断言） | ✅ |
+| B3a | 删 popup，点图标直接开设置页；清理反馈链路 | ✅ |
+| B3b | 设置页 25 项 → 4 项；配置 schema v4 | ✅ |
+| B4 | 样式单真源（865 → 323 行）；内容脚本 621 → 53 行；`manifest` 升 2.0.0 | ✅ |
 
 ## 待办（按优先级）
 
-- [ ] B3b：设置页只留 API Key / 模型 / 深度思考 / 历史（地址与自定义后缀进「高级」折叠区）；配置 schema 升 v4
-- [ ] B4：`ui.js`/`injector.js`/`extractor.js` 合并、样式单真源、`manifest.json` 升 2.0.0
+- [ ] 真机回归：B3 + B4 合并后尚未在 Chrome 里跑过
+- [ ] `manifest.json` 里的 `activeTab` 权限从未使用，待删（需确认）
 - [ ] 思考模式偶发不触发（`reasoning_tokens=0`）的产品侧处理
 - [ ] Firefox 支持
 - [ ] 历史记录单条删除 / 导出
 
 ## 变更日志
 
-### v2.0.0-dev（2026-10-28，重构中，未发布）
-- ✅ B1 正文生成改纯文本（去掉 `response_format`）＋ `reasoning_effort` ＋ `max_tokens` 16384，修复"每次生成都被截断 / 思考吃光预算"
+### v2.0.0（2026-10-28）— 重构完成
+- ✅ 正文生成改纯文本（去掉 `response_format`）＋ `reasoning_effort` ＋ `max_tokens` 16384，修复"每次生成都被截断 / 思考吃光预算"
 - ✅ Prompt 388 行 / 50 处约束 → 三条判据 + 一个结构 + 篇幅规则（约 730 字符）
 - ✅ 截断改为确定性失败、不再重试
 - ✅ 配置 schema v2 → v3：新增 `thinking`
 - ✅ B2 面板重写：`ui.js` 865 → 309 行，只留正文与两个动作
-- ✅ 新增 Prompt 回归网 `tests/prompt/`：L0 判据 + 11 项断言 + 5 篇 golden 集
+- ✅ 新增 Prompt 回归网 `tests/prompt/`：L0 判据 + 11 项断言 + 6 篇 golden 集
+- ✅ 删 popup，点图标直接开设置页；清理反馈链路（`UPDATE_FEEDBACK`、历史反馈查询）
+- ✅ 设置页 25 项 → 4 项（API Key / 模型 / 深度思考 / 历史）；配置 schema v3 → v4
+- ✅ 样式单真源：内联样式与 `style.css` 合并成一份，顺带删掉 52 条死规则（865 → 323 行）
+- ✅ 内容脚本入口 621 → 53 行；manifest 去掉未使用的 `prompts.js` 注入
 - ✅ 文档重组：删 PRD / 架构评审 / 营销手册，重写 AGENTS、TECH_DESIGN、PROMPT_DESIGN、USER_GUIDE
 
 ### v1.1.2（2026-10-27）— 重构前基线

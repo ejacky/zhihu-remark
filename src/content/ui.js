@@ -284,7 +284,6 @@ const UI = {
    */
   _removePanel(panel) {
     panel.classList.remove('zhihu-remark-analysis-panel--visible');
-    panel.classList.remove('zhihu-remark-truncated-panel--visible');
     setTimeout(() => {
       if (panel.parentNode) {
         panel.parentNode.removeChild(panel);
@@ -297,7 +296,7 @@ const UI = {
    */
   cleanup() {
     this._notifications.forEach(n => this._removeNotification(n));
-    document.querySelectorAll('.zhihu-remark-analysis-panel, .zhihu-remark-truncated-panel, .zhihu-remark-loading').forEach(el => {
+    document.querySelectorAll('.zhihu-remark-analysis-panel').forEach(el => {
       if (el.parentNode) el.parentNode.removeChild(el);
     });
   }

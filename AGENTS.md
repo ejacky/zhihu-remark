@@ -82,11 +82,11 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 
 ## 5. 高频陷阱
 
-1. **思考与正文共用 `max_tokens`**：实测思考 2300~3500 tokens、正文约 800；给 4096 必然 `finish_reason=length`。预算在 `CONSTANTS.GENERATE_MAX_TOKENS`（16384），用户配置只作下限。
+1. **思考与正文共用 `max_tokens`**：实测思考 2300~3500 tokens、正文约 800；给 4096 必然 `finish_reason=length`。预算固定为 `CONSTANTS.GENERATE_MAX_TOKENS`（16384），不暴露给用户。
 2. **`reasoning_effort` 是这个通路的唯一思考开关**：`none` 关闭（1~3 秒）、`high` 开启（30~50 秒）。`temperature` 在思考模式下被官方静默忽略，传了没用。
 3. **截断不重试**：这是预算问题，确定性失败，重试只会再烧一遍思考 token。
 4. **知乎是 SPA 且 DOM 会变**：注入要覆盖首次加载、站内跳转、滚动加载、展开全文；选择器保留多策略 fallback。
-5. **样式有两份副本**：`src/content/style.css` 与 `src/content/index.js` 的内联样式重复，改一处要同步另一份。
+5. **样式只有一份**：`src/content/style.css`，由 manifest 注入。不要在 JS 里再写内联样式（v2.0 之前有两份，已经漂移过）。
 6. **Service Worker 随时被回收**：会话状态不要放后台内存，放 `chrome.storage.local` 或内容脚本。
 7. **卡片缓存按回答维度**：`Injector._panelCache` 存 `{ state, cachedAt }`，关闭可恢复；点「填入评论框」后清除。改 key 逻辑要同步清理。
 8. **内容脚本只匹配** `www.zhihu.com/*` 和 `zhuanlan.zhihu.com/p/*`；扩页面必须改 manifest 并实测。
@@ -126,4 +126,5 @@ v2.0 重构在 `refactor/v2` 分支上，`main` 停在 `v1.1.2`：
 - ✅ B2 面板：19 个可点元素 → 3 个（填入评论框 / 换个说法 / 关闭）
 - ✅ Prompt 回归网：`tests/prompt/`
 - ✅ B3 设置页：主界面 4 项（API Key / 模型 / 深度思考 / 历史），其余进「高级设置」；配置 schema v4；popup 与反馈链路已删
-- ⏳ B4：文档与文件合并，`manifest.json` 升 2.0.0
+- ✅ B4 样式单真源（865 → 323 行）、内容脚本入口 621 → 53 行、`manifest` 升 2.0.0
+- ⏳ 真机回归：B3 + B4 合并后尚未在 Chrome 里跑过
