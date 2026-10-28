@@ -11,8 +11,8 @@
  * 鉴权失败、域名未授权等确定性失败不做重试。
  *
  * @doc docs/TECH_DESIGN.md#42-外部-ai-api
- * @doc docs/TECH_DESIGN.md#8-错误处理
- * @doc docs/TECH_DESIGN.md#73-网络安全
+ * @doc docs/TECH_DESIGN.md#7-错误处理
+ * @doc docs/TECH_DESIGN.md#63-权限与域名授权
  */
 
 const API = {

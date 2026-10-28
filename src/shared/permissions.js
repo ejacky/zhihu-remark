@@ -6,7 +6,7 @@
  * 保存配置时通过 chrome.permissions.request() 动态申请
  * （对应 manifest.json 的 optional_host_permissions）。
  *
- * @doc docs/TECH_DESIGN.md#73-网络安全
+ * @doc docs/TECH_DESIGN.md#63-权限与域名授权
  * @doc docs/USER_GUIDE.md#41-api-设置
  */
 

@@ -6,8 +6,8 @@
  * 输入框、核心意图编辑器、快捷反馈 chips、有用/无用 —— 用户实际只会走两个动作，
  * 其余 19 个可点元素只是把 Prompt 的内部结构摊在界面上。相关结构已随 B2 删除。
  *
- * @doc docs/TECH_DESIGN.md#内容脚本
- * @doc docs/USER_GUIDE.md#生成反驳
+ * @doc docs/TECH_DESIGN.md#24-卡片与交互
+ * @doc docs/USER_GUIDE.md#3-生成反驳
  */
 
 const UI = {
