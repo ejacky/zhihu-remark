@@ -120,11 +120,12 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 
 ## 8. 当前状态（2026-10-28）
 
-v2.0 重构在 `refactor/v2` 分支上，`main` 停在 `v1.1.2`：
+**v2.0.0 已合并进 `main` 并推送**，tag `v2.0.0` 指向 `b968b51`；`refactor/v2` 保留为同名快照。
 
 - ✅ B1 生成链路：纯文本 + `reasoning_effort` + 16384 预算，Prompt 从 388 行降到约 730 字符
 - ✅ B2 面板：19 个可点元素 → 3 个（填入评论框 / 换个说法 / 关闭）
-- ✅ Prompt 回归网：`tests/prompt/`
+- ✅ Prompt 回归网：`tests/prompt/` + `tests/docs.test.mjs`（14 项断言）
 - ✅ B3 设置页：主界面 4 项（API Key / 模型 / 深度思考 / 历史），其余进「高级设置」；配置 schema v4；popup 与反馈链路已删
 - ✅ B4 样式单真源（865 → 323 行）、内容脚本入口 621 → 53 行、`manifest` 升 2.0.0
-- ⏳ 真机回归：B3 + B4 合并后尚未在 Chrome 里跑过
+- ⚠️ **欠一次真机回归**：B2 之后的面板、设置页、样式合并都没在 Chrome 里跑过，合并前只做了静态校验
+- 待办：`activeTab` 权限从未使用（待删，需确认）；思考模式偶发不触发（`reasoning_tokens=0`）
