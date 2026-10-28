@@ -7,7 +7,7 @@
 ### 1.1 三个运行上下文
 
 ```
-知乎页面 (content script)          Service Worker (background)        设置页 / popup
+知乎页面 (content script)          Service Worker (background)        设置页 (options)
   Extractor  取正文                  路由消息                          读写配置
   Injector   注入按钮/填评论框   ──►  Storage 配置+历史（chrome.storage.local）
   UI         卡片与通知               API     调模型（fetch，直连服务商）
@@ -15,7 +15,7 @@
 
 - **content**：拿不到 `chrome.storage` 的便利接口，配置一律经消息向 background 要。
 - **background**：可能随时被回收（30s idle），因此不保存会话状态；一次生成用一条消息承载。
-- **options / popup**：普通页面，只做配置读写，不参与生成。
+- **options**：普通页面，只做配置读写，不参与生成。点扩展图标由 `chrome.action.onClicked` 直接打开它（**无 popup**）。
 
 ### 1.2 技术约束
 
@@ -31,7 +31,7 @@
 
 1. `manifest.json` → `content_scripts[0].js`
 2. `src/background/index.js` → `importScripts(...)`
-3. `src/options/index.html` / `src/popup/index.html` → `<script>`
+3. `src/options/index.html` → `<script>`
 
 内容脚本顺序：`constants → utils → prompts → extractor → ui → injector → index`
 后台顺序：`constants → utils → permissions → opencode → prompts → storage → api → index`
@@ -111,7 +111,6 @@ UI.createPanel({ state, cachedAt, onRegenerate, onUse, onDismiss })
 | `GENERATE_REBUTTAL` | content → bg | `{ content, style, regenerateHint }` |
 | `GET_CONFIG` / `SET_CONFIG` | 页面 ↔ bg | 配置对象 |
 | `GET_HISTORY` / `CLEAR_HISTORY` | 页面 → bg | `{ limit }` |
-| `UPDATE_FEEDBACK` | 页面 → bg | `{ historyId, feedback }`（面板已不再调用，待清理） |
 | `SHOW_NOTIFICATION` | bg → content | `{ message, type }`（暂无发送方） |
 
 消息类型全部走 `CONSTANTS.MESSAGE_TYPES`，不要写裸字符串。

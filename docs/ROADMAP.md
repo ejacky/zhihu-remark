@@ -11,12 +11,13 @@ v2.0 重构在 `refactor/v2` 分支，`main` 停在 `v1.1.2`。
 | B1 | 生成链路：纯文本 + `reasoning_effort` + 16384 预算；Prompt 388 行 → 约 730 字符 | ✅ |
 | B2 | 面板：19 个可点元素 → 3 个 | ✅ |
 | — | Prompt 回归网 `tests/prompt/` | ✅ |
-| B3 | 配置项 25 → 4，删 popup | ⏳ |
+| B3a | 删 popup，点图标直接开设置页；清理反馈链路（`UPDATE_FEEDBACK` / 历史反馈查询） | ✅ |
+| B3b | 设置页 25 项 → 4 项；配置 schema v4（删 `errorTypes` / `features` / `strictness` / `temperature` / `maxTokens`） | ⏳ |
 | B4 | 文档/文件合并，升 2.0.0 | ⏳ |
 
 ## 待办（按优先级）
 
-- [ ] B3：设置页只留 API Key / 模型 / 深度思考 / 历史；删 popup 与 4 个废配置（`errorTypes` / `features` / `strictness` / `temperature`）
+- [ ] B3b：设置页只留 API Key / 模型 / 深度思考 / 历史（地址与自定义后缀进「高级」折叠区）；配置 schema 升 v4
 - [ ] B4：`ui.js`/`injector.js`/`extractor.js` 合并、样式单真源、`manifest.json` 升 2.0.0
 - [ ] 思考模式偶发不触发（`reasoning_tokens=0`）的产品侧处理
 - [ ] Firefox 支持
