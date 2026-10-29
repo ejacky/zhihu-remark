@@ -81,3 +81,19 @@ test('文档目录只剩五份，且都不为空', () => {
     assert.ok(statSync(path.join(ROOT, 'docs', f)).size > 500, `${f} 内容过少`);
   }
 });
+
+test('仓库首页 README 存在，且仍覆盖安装 / 隐私 / 无后端三件事', () => {
+  const readme = path.join(ROOT, 'README.md');
+  assert.ok(existsSync(readme), '缺少 README.md（GitHub 首页会是裸文件列表）');
+  const text = readFileSync(readme, 'utf8');
+
+  assert.ok(text.length > 800, 'README 过短，起不到首页作用');
+  for (const kw of ['安装', '隐私', '无后端']) {
+    assert.ok(text.includes(kw), `README 缺少「${kw}」相关内容——上架后这三件事必须能一眼看到`);
+  }
+  // 版本号不写进 README：它只在 manifest / STORE.md / Releases 里维护，写两处必然漂移
+  assert.ok(
+    !/当前(线上)?版本\s*\**\d+\.\d+\.\d+/.test(text),
+    'README 不要写死版本号，改为链接 Releases'
+  );
+});

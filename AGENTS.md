@@ -106,6 +106,7 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 
 | 需要了解 | 读 |
 |---|---|
+| 仓库首页（定位 / 安装 / 使用 / 隐私） | `README.md` —— 不写死版本号，细节链接到 `docs/` |
 | 架构、数据流、消息协议、存储、AI 调用、错误处理 | `docs/TECH_DESIGN.md` |
 | Prompt 怎么写、怎么调、golden 集 | `docs/PROMPT_DESIGN.md` |
 | 安装、使用、设置、常见问题 | `docs/USER_GUIDE.md` |
