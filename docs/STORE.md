@@ -118,11 +118,9 @@ Drafts may contain errors. Always verify specific figures and citations before p
 Generate a comment draft for a Zhihu answer and insert it into the comment box for the user to review and post manually.
 ```
 
-## 六、权限理由（逐条，中英都填）
+## 六、主机权限理由
 
-### 6.0 主机权限理由（合并填写版）
-
-CWS 的「主机权限理由 / Host permission justification」是一个输入框，要一段话讲清**所有** host permission，用这段：
+CWS 的「主机权限理由 / Host permission justification」是一个输入框，一段话讲清**所有** host permission，用下面这段（中文）：
 
 ```
 本扩展的单一用途是给知乎回答写评论草稿，因此只在以下场景请求主机权限：
@@ -153,43 +151,9 @@ This extension has a single purpose: draft a comment for a Zhihu answer. Host pe
 The extension does not read or modify cookies or login credentials on any site, does not crawl, contains no remote code, and sends nothing to the developer (there is no backend).
 ```
 
-### 6.1 逐条填写（若后台是分项输入）
-
-**`storage`**
-
-```
-保存用户自己的 API Key、模型设置与最近 10 条生成记录，全部只存在本机 chrome.storage.local，不上传。
-```
-```
-Stores the user's own API key, model settings and the last 10 generations locally via chrome.storage.local. Nothing is uploaded.
-```
-
-**`https://www.zhihu.com/*`**
-
-```
-唯一用途：在知乎回答下方注入按钮、读取回答正文、把草稿填进评论输入框。不读取其他页面。
-```
-```
-Sole purpose: inject a button under Zhihu answers, read the answer text, and fill the draft into the comment box. No other pages are accessed.
-```
-
-**四个 AI 域名（OpenAI / Anthropic / DeepSeek / Moonshot）**
-
-```
-内置 AI 服务商的官方接口地址。仅当用户点击生成时，用用户自己的 Key 直接请求，用于产出评论草稿。
-```
-```
-Official endpoints of the built-in AI providers. Called directly with the user's own key, only when the user clicks generate.
-```
-
-**可选权限（`https://*/*`、`localhost`、`127.0.0.1`）**
-
-```
-可选权限，默认不授予。仅当用户在设置页自行填写自定义 API 地址（代理、镜像、本地模型网关）时，才就该域名弹窗申请一次授权；拒绝则不保存配置。
-```
-```
-Optional, not granted by default. Requested at save time only when the user types a custom API base URL (proxy, mirror, local gateway). If denied, the config is not saved.
-```
+> `storage` 是唯一一条 API 权限（不属于主机权限）。如果后台另有单独的「权限理由」输入框，填这一句：
+>
+> `保存用户自己的 API Key、模型设置与最近 10 条生成记录，全部只存在本机 chrome.storage.local，不上传。`
 
 ## 七、数据使用表单
 
