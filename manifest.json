@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
   "name": "知乎反驳助手",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "为知乎上的错误回答一键生成有理有据的反驳评论草稿，让理性纠错不再费力",
   "permissions": [
-    "storage",
-    "activeTab"
+    "storage"
   ],
   "host_permissions": [
     "https://www.zhihu.com/*",

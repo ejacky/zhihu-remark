@@ -9,10 +9,10 @@
 <!-- AUTO:START -->
 | 项 | 值 |
 |---|---|
-| 当前版本 | `2.0.0` |
+| 当前版本 | `2.0.1` |
 | 扩展名称 | 知乎反驳助手 |
 | 一句话 | 为知乎上的错误回答一键生成有理有据的反驳评论草稿，让理性纠错不再费力 |
-| 声明权限 | `storage`<br>`activeTab` |
+| 声明权限 | `storage` |
 | 站点权限 | `https://www.zhihu.com/*`<br>`https://api.openai.com/*`<br>`https://api.anthropic.com/*`<br>`https://api.deepseek.com/*`<br>`https://api.moonshot.cn/*` |
 | 可选权限 | `https://*/*`<br>`http://localhost/*`<br>`http://127.0.0.1/*` |
 | 远程代码 | 否 |
@@ -21,7 +21,7 @@
 
 ## 二、上架前检查
 
-- [ ] **删掉 `activeTab` 权限**：代码从未使用，CWS 会逐条问用途，答不上来要整改
+- [x] ~~删掉 `activeTab` 权限~~：2.0.1 已删除，现在只剩 `storage`
 - [ ] 隐私政策已托管到公开可访问的 URL（仓库是 private，需 Gist / 自有页面）
 - [ ] 截图按 §八 重拍，别复用旧图（2.0.0 删了 popup，旧图已与产品不符）
 - [ ] 审核备注里写明「需要用户自备 API Key」并提供测试步骤，否则审核员无法验证
@@ -119,6 +119,41 @@ Generate a comment draft for a Zhihu answer and insert it into the comment box f
 ```
 
 ## 六、权限理由（逐条，中英都填）
+
+### 6.0 主机权限理由（合并填写版）
+
+CWS 的「主机权限理由 / Host permission justification」是一个输入框，要一段话讲清**所有** host permission，用这段：
+
+```
+本扩展的单一用途是给知乎回答写评论草稿，因此只在以下场景请求主机权限：
+
+1) https://www.zhihu.com/*（含 zhuanlan.zhihu.com）
+唯一用途：在该站回答的操作栏注入一个按钮、读取当前回答的正文以生成草稿、以及把草稿填进评论输入框。不读取其他页面，不抓取列表页，不修改页面原有内容。该权限在安装时即授予，因为它是扩展的核心工作页面。
+
+2) https://api.openai.com/* 、https://api.anthropic.com/* 、https://api.deepseek.com/* 、https://api.moonshot.cn/*（四个内置 AI 服务商）
+唯一用途：用户点击「生成反驳」时，用用户自己填写的 API Key 直接向所选服务商的官方接口发送一次 HTTPS 请求并取回文本。改由内置域名承载，是为了让用户开箱可用；用户也可以在设置里改成任何兼容地址。
+
+3) https://*/* 、http://localhost/* 、http://127.0.0.1/*（可选权限，默认不授予）
+只有用户在设置页主动填写自定义 API 地址（自建代理、镜像站、本地模型网关）时，才会就该域名弹一次授权窗口；用户拒绝则不保存配置。未授权的域名，扩展不会发起任何请求。这三条声明为 optional_host_permissions，因此不会出现在安装权限提示中。
+
+本扩展不读取或修改上述任何网站的 Cookie、登录凭据，不做批量抓取，不含远程代码，也不把任何数据回传到开发者服务器（无后端）。
+```
+
+英文版：
+
+```
+This extension has a single purpose: draft a comment for a Zhihu answer. Host permissions are requested only for:
+
+1) https://www.zhihu.com/* — inject one button into the answer's action bar, read the current answer text to draft a comment, and fill that draft into the comment box. No other pages are read, no crawling, no modification of existing page content.
+
+2) https://api.openai.com/*, https://api.anthropic.com/*, https://api.deepseek.com/*, https://api.moonshot.cn/* — when the user clicks "generate", the extension sends one HTTPS request with the user's own API key to the provider they selected. These are the four built-in providers; users may replace the base URL with any compatible endpoint in settings.
+
+3) https://*/*, http://localhost/*, http://127.0.0.1/* — declared as optional_host_permissions and NOT granted by default. Requested at save time only when the user types a custom API base URL (proxy, mirror, local gateway). If denied, the config is not saved and no request is made.
+
+The extension does not read or modify cookies or login credentials on any site, does not crawl, contains no remote code, and sends nothing to the developer (there is no backend).
+```
+
+### 6.1 逐条填写（若后台是分项输入）
 
 **`storage`**
 
