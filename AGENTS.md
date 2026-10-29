@@ -118,17 +118,46 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 - Conventional Commits，subject 用中文：`feat(panel): …`、`fix(api): …`、`test(prompt): …`。
 - 一次提交一件事；不提交 zip/crx、密钥、`.env`、`.kimi/active/`；未经要求不 push、不改写历史。
 - 版本以 `manifest.json` 为准；发版时 bump 版本并在 `docs/ROADMAP.md` 加带日期的条目。
-- 打包只含 `manifest.json`、`src/`、`assets/`（排除 `docs/`、`tests/`、`assets/source/`、`scripts/`）；产物不提交。
+- 打包只含 `manifest.json`、`src/`、`assets/` 顶层图标（排除 `docs/`、`tests/`、`assets/source/`、`assets/v*`、`scripts/`）；产物不提交。
 - `docs/STORE.md` 的自动区（版本 / 权限清单）**不要手改**：打 `v*` tag 时 `.github/workflows/store-doc.yml` 会重跑 `scripts/sync-store.mjs` 并提交；本地可先跑 `node scripts/sync-store.mjs --check` 预检。
 
-## 8. 当前状态（2026-10-28）
+### 7.1 tag 的语义（重要）
 
-**v2.0.0 已合并进 `main` 并推送**，tag `v2.0.0` 指向 `b968b51`；`refactor/v2` 保留为同名快照。
+**`vX.Y.Z` 只标记"提交到商店审核的那份代码"。** 开发里程碑不占用这个命名空间（可用 `milestone/x.y.z` 或不打）。历史上 `v2.0.0` / `v2.0.1` 是内部里程碑（未上架），已在 ROADMAP 里标注；不要照抄那个做法。
 
-- ✅ B1 生成链路：纯文本 + `reasoning_effort` + 16384 预算，Prompt 从 388 行降到约 730 字符
-- ✅ B2 面板：19 个可点元素 → 3 个（填入评论框 / 换个说法 / 关闭）
-- ✅ Prompt 回归网：`tests/prompt/` + `tests/docs.test.mjs`（14 项断言）
-- ✅ B3 设置页：主界面 4 项（API Key / 模型 / 深度思考 / 历史），其余进「高级设置」；配置 schema v4；popup 与反馈链路已删
-- ✅ B4 样式单真源（865 → 323 行）、内容脚本入口 621 → 53 行、`manifest` 升 2.0.0
-- ⚠️ **欠一次真机回归**：B2 之后的面板、设置页、样式合并都没在 Chrome 里跑过，合并前只做了静态校验
-- 待办：`activeTab` 权限从未使用（待删，需确认）；思考模式偶发不触发（`reasoning_tokens=0`）
+- **在提交审核的那一刻打 tag**，不要等审核通过：CWS 审核是异步的（数小时到数天），等通过时工作区早就往前走了，tag 只能指向一个靠记忆找回的 SHA。
+- 审核通过后**不改 tag 注解**（避免 force push），只在 `docs/ROADMAP.md` 追加一行"已通过 · 已上线"。
+- **版本号一旦用过不复用**：被拒或自查出问题，改完升 patch + 打新 tag（2.0.0 → 2.0.1 → 2.0.2 就是这么走的）。
+
+### 7.2 发版清单
+
+多月一次，照抄执行即可：
+
+```
+发版前
+[ ] bump manifest.json 版本号；ROADMAP 加条目
+[ ] node scripts/sync-store.mjs        # 商店文案同步（或 CI 打 tag 时自动跑）
+[ ] node tests/prompt/rules.test.mjs / node tests/docs.test.mjs
+[ ] 打包 manifest + src + assets 顶层图标 → dist/zhihu-remark-X.Y.Z.zip
+[ ] 手工过一遍 AGENTS §2 的验收清单
+
+提交审核
+[ ] git tag -a vX.Y.Z -m "X.Y.Z submitted to CWS"
+[ ] git push && git push origin vX.Y.Z
+[ ] 上传 zip；核对后台权限提示与 manifest 一致
+[ ] 审核备注写明"需自备 API Key"的测试步骤
+
+上线后
+[ ] ROADMAP 追加"审核通过 · 已上线"（不改 tag）
+[ ] 商店后台单独上传 128 图标（不从包里读）
+```
+
+## 8. 当前状态（2026-10-29）
+
+**线上版本 `2.0.2`**（tag `v2.0.2` → `9fa4c9c`），2026-10-29 通过 CWS 审核并上线，是本项目首个商店版本。`main` 即线上代码。
+
+- ✅ v2.0 重构（B1~B4）已在 2.0.0 收口：生成链路改纯文本、面板砍到 3 个动作、设置页 4 项、样式单真源
+- ✅ 上架配套：`docs/STORE.md` 文案、`scripts/sync-store.mjs` 与 tag 触发的自动同步、图标改透明圆角
+- 版本号已消耗 `2.0.0` / `2.0.1`（均未上架，仅内部里程碑，见 ROADMAP）；下一个版本从 **2.0.3** 起
+- 待办：思考模式偶发不触发（`reasoning_tokens=0`）；商店宣传图块（440×280 / 1400×560）未做；历史记录单条删除与导出
+- 注：本轮会话未记录 2.0.2 的真机回归明细，后续任何改动仍需按 §2 清单手动验
