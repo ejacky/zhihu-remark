@@ -150,6 +150,10 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 上线后
 [ ] ROADMAP 追加"审核通过 · 已上线"（不改 tag）
 [ ] 商店后台单独上传 128 图标（不从包里读）
+[ ] GitHub Release 附上同一个 zip：
+    gh release create vX.Y.Z dist/zhihu-remark-X.Y.Z.zip \
+      --title "vX.Y.Z — <一句话>" --notes-file <notes.md>
+    只为「真的上架过」的版本建 release；里程碑 tag 不要建
 ```
 
 ## 8. 当前状态（2026-10-29）
