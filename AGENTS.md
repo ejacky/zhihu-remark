@@ -99,7 +99,8 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 |---|---|
 | `src/**` 任何逻辑 | `docs/TECH_DESIGN.md` 对应章节 |
 | `src/shared/prompts.js` | `docs/PROMPT_DESIGN.md` + 跑 §2 的测试 |
-| 版本号 / 发版 | `docs/ROADMAP.md` 变更日志 |
+| 版本号 / 发版 | `docs/ROADMAP.md` 变更日志；`docs/STORE.md` 的自动区由脚本同步 |
+| `manifest.json` 的权限 / 名称 / 描述 | 跑 `node scripts/sync-store.mjs`（打 `v*` tag 时 CI 会自动跑） |
 
 确实无需更新时，在回复末尾用一行说明，如 `> 文档无需更新：纯内部重构，对外无变化。`
 
@@ -109,6 +110,7 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 | Prompt 怎么写、怎么调、golden 集 | `docs/PROMPT_DESIGN.md` |
 | 安装、使用、设置、常见问题 | `docs/USER_GUIDE.md` |
 | 阶段规划与变更日志 | `docs/ROADMAP.md` |
+| **商店上架文案（可直接粘贴）** | `docs/STORE.md` |
 | 历史 plan（只读，不要修改） | `.kimi/plans/` |
 
 ## 7. Git 与版本
@@ -116,7 +118,8 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 - Conventional Commits，subject 用中文：`feat(panel): …`、`fix(api): …`、`test(prompt): …`。
 - 一次提交一件事；不提交 zip/crx、密钥、`.env`、`.kimi/active/`；未经要求不 push、不改写历史。
 - 版本以 `manifest.json` 为准；发版时 bump 版本并在 `docs/ROADMAP.md` 加带日期的条目。
-- 打包只含 `manifest.json`、`src/`、`assets/`（排除 `docs/`、`tests/`、`assets/source/`）；产物不提交。
+- 打包只含 `manifest.json`、`src/`、`assets/`（排除 `docs/`、`tests/`、`assets/source/`、`scripts/`）；产物不提交。
+- `docs/STORE.md` 的自动区（版本 / 权限清单）**不要手改**：打 `v*` tag 时 `.github/workflows/store-doc.yml` 会重跑 `scripts/sync-store.mjs` 并提交；本地可先跑 `node scripts/sync-store.mjs --check` 预检。
 
 ## 8. 当前状态（2026-10-28）
 

@@ -70,11 +70,11 @@ test('所有 @doc 锚点都能命中文档里的标题', () => {
   assert.deepEqual(broken, [], `锚点失效（章节改名或删除？）：\n${broken.join('\n')}`);
 });
 
-test('文档目录只剩四份，且都不为空', () => {
+test('文档目录只剩五份，且都不为空', () => {
   const files = readdirSync(path.join(ROOT, 'docs')).filter(f => f.endsWith('.md'));
   assert.deepEqual(
     files.sort(),
-    ['PROMPT_DESIGN.md', 'ROADMAP.md', 'TECH_DESIGN.md', 'USER_GUIDE.md'],
+    ['PROMPT_DESIGN.md', 'ROADMAP.md', 'STORE.md', 'TECH_DESIGN.md', 'USER_GUIDE.md'],
     '新增或删除文档时，同步更新 AGENTS.md 的文档索引与本条断言'
   );
   for (const f of files) {
