@@ -182,9 +182,11 @@ The extension does not read or modify cookies or login credentials on any site, 
 
 | 顺序 | 内容 | 尺寸 | 文件 |
 |---|---|---|---|
-| 1 | 设置页（四项 + 折叠的高级设置） | 1280×800 | `dist/store-shots/1-设置页-1280x800.png` |
+| 1 | 设置页（API Key / 同步模型 / 深度思考 / 历史 + 折叠的高级设置） | 1280×800 | `dist/store-shots/1-设置页-1280x800.png` |
 | 2 | 知乎回答页，标出注入的按钮位置 | 640×400 | `dist/store-shots/2-按钮位置-640x400.png` |
 | 3 | 生成结果卡片（正文 + 两个按钮） | 640×400 | `dist/store-shots/3-生成结果-640x400.png` |
+
+> 2026-11-04：第 1 张已替换为 2.0.3 版设置页（新增「同步模型」与提供商选择）；2.0.2 的旧图存于 `dist/store-shots/archive/`。当前截图选中「自定义」并展示了 opencode.ai 网关，若要按下面的脱敏口径，用 DeepSeek + 留空地址重拍即可。
 
 拍摄注意：
 
