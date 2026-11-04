@@ -9,14 +9,14 @@
 <!-- AUTO:START -->
 | 项 | 值 |
 |---|---|
-| 当前版本 | `2.0.2` |
+| 当前版本 | `2.0.3` |
 | 扩展名称 | 知乎反驳助手 |
 | 一句话 | 为知乎上的错误回答一键生成有理有据的反驳评论草稿，让理性纠错不再费力 |
 | 声明权限 | `storage` |
 | 站点权限 | `https://www.zhihu.com/*`<br>`https://api.openai.com/*`<br>`https://api.anthropic.com/*`<br>`https://api.deepseek.com/*`<br>`https://api.moonshot.cn/*` |
 | 可选权限 | `https://*/*`<br>`http://localhost/*`<br>`http://127.0.0.1/*` |
 | 远程代码 | 否 |
-| 同步时间 | 2026-11-02 |
+| 同步时间 | 2026-11-04 |
 <!-- AUTO:END -->
 
 ## 二、上架前检查
