@@ -160,6 +160,62 @@ body {
   color: #8c8c8c;
 }
 
+.form-hint.is-error {
+  color: #ff4d4f;
+}
+
+.form-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.form-label-row label {
+  margin-bottom: 0;
+}
+
+.builtin-base {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  background: #fafafa;
+}
+
+.builtin-base[hidden] {
+  display: none;
+}
+
+.builtin-base code {
+  font-size: 13px;
+  color: #595959;
+  word-break: break-all;
+}
+
+.builtin-base__override {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #262626;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.builtin-base__override input {
+  accent-color: #056de8;
+}
+
+.form-group input[hidden] {
+  display: none;
+}
+
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -493,6 +549,25 @@ body {
 
 .btn--danger:hover {
   background: #ffccc7;
+}
+
+.btn--link {
+  padding: 4px 8px;
+  color: #056de8;
+  background: none;
+}
+
+.btn--link:hover {
+  background: #e6f0fd;
+}
+
+.btn--small {
+  font-size: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* 高级设置折叠区（B3 后设置页只剩这一处折叠） */

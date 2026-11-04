@@ -26,22 +26,22 @@
 
 ## 使用
 
-1. 点扩展图标 → 打开设置页，填 **API Key** 与**模型名**（其余用默认值）
+1. 点扩展图标 → 打开设置页，填 **API Key**，点「同步模型」选模型（其余用默认值）
 2. 打开任意知乎回答，点「🛡️ 生成反驳」
 3. 等 30~60 秒（默认开启深度思考），读一遍、按需修改，自己点发送
 
-需要自备 AI API Key（DeepSeek / Kimi / OpenAI / Claude，或任何 OpenAI 兼容端点）。费用由服务商直接向你收取，扩展不参与计费。
+需要自备 AI API Key（DeepSeek / Kimi / OpenCode Go / OpenAI / Claude，或任何 OpenAI 兼容端点）。费用由服务商直接向你收取，扩展不参与计费。
 
 ## 设置只有四项
 
 | 项 | 说明 |
 |---|---|
 | API Key | 必填，只存本机 |
-| 模型 | 可手填任意模型名 |
+| 模型 | 点「同步模型」从服务商列表里选，也可手填 |
 | 深度思考 | 开：30~60 秒、质量更好；关：1~3 秒 |
 | 保存历史 | 保留最近 10 条，只存本机 |
 
-提供商、API 地址、风格、自定义 Prompt 后缀收在「高级设置」里。
+提供商、API 地址、风格、自定义 Prompt 后缀收在「高级设置」里。内置提供商的 Base URL 已经填好，不用手填；需要代理 / 镜像时才勾选覆盖。
 
 ## 隐私
 
@@ -60,11 +60,12 @@ API Key 与生成记录只存在本机 `chrome.storage.local`。生成时只把�
 
 ## 开发
 
-纯原生 JS + HTML/CSS，**无 npm、无构建**，仓库根目录就是可加载的扩展。两套自动化测试，共 14 项断言，十几毫秒：
+纯原生 JS + HTML/CSS，**无 npm、无构建**，仓库根目录就是可加载的扩展。三套自动化测试，全部零依赖、不联网：
 
 ```powershell
 node tests/prompt/rules.test.mjs     # Prompt 回归网
 node tests/docs.test.mjs             # 文档完整性
+node tests/options/models.test.mjs   # 设置页模型目录（端点 / 鉴权 / 解析）
 ```
 
 ## 状态

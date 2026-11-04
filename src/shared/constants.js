@@ -14,7 +14,9 @@ const CONSTANTS = {
   STORAGE_KEYS: {
     CONFIG: 'zhihu_remark_config',
     HISTORY: 'zhihu_remark_history',
-    CACHE: 'zhihu_remark_cache'
+    CACHE: 'zhihu_remark_cache',
+    // 设置页「同步模型」拉到的模型列表缓存；只存 ID / 名称 / 同步时间，不存 API Key
+    MODEL_CATALOG: 'zhihu_remark_model_catalog'
   },
 
   // 配置 schema 版本
@@ -93,27 +95,71 @@ const CONSTANTS = {
 
   // 提供商默认配置
   //
-  // apiBase：用户未填写 API Base URL 时使用的默认地址，设置页会把它显示为输入框 placeholder
-  // models：设置页模型输入框的建议列表（datalist），不限制用户手动输入其他模型名
+  // apiBase：用户未填写 API Base URL 时使用的默认地址，设置页会把它显示为「内置地址」，
+  //         需要代理 / 镜像时用户可勾选覆盖
+  // defaultModel：切换提供商时的初始模型名，不承担「完整列表」职责
+  // models：离线兜底列表。只有 OpenCode 的 /v1/models 是公开、免鉴权的，因此只在这里
+  //         放 OpenCode Go 的快照；其余提供商的列表由设置页「同步模型」从用户账号拉取
   PROVIDER_DEFAULTS: {
     openai: {
       apiBase: 'https://api.openai.com/v1',
-      models: ['gpt-5.5', 'gpt-5.4-pro', 'gpt-4o', 'gpt-4o-mini', 'gpt-4-turbo', 'gpt-3.5-turbo']
+      defaultModel: 'gpt-4o',
+      models: []
     },
     anthropic: {
       apiBase: 'https://api.anthropic.com/v1',
-      models: ['claude-4-opus-20250514', 'claude-4-sonnet-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307']
+      defaultModel: 'claude-sonnet-4-6',
+      models: []
     },
     deepseek: {
       apiBase: 'https://api.deepseek.com',
-      models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'deepseek-chat', 'deepseek-reasoner']
+      defaultModel: 'deepseek-v4-pro',
+      models: []
     },
     kimi: {
       apiBase: 'https://api.moonshot.cn/v1',
-      models: ['kimi-k2.6', 'moonshot-v1-128k', 'moonshot-v1-32k', 'moonshot-v1-8k']
+      defaultModel: 'kimi-k2.6',
+      models: []
+    },
+    'opencode-go': {
+      apiBase: 'https://opencode.ai/inference/go/openai/v1',
+      defaultModel: 'deepseek-v4.1-flash',
+      // 2026-11-02 取自 https://opencode.ai/inference/go/v1/models（公开、免鉴权）；
+      // 设置页「同步模型」会刷新，这里只是首次打开时的兜底
+      models: [
+        'deepseek-v4.1-flash',
+        'deepseek-v4-pro',
+        'glm-5.3-flash',
+        'glm-5.3',
+        'glm-5.2',
+        'kimi-k3.1-pro',
+        'kimi-k3',
+        'kimi-k2.7-code',
+        'claude-haiku-5-5',
+        'gpt-6-luna',
+        'gpt-5.6-luna',
+        'grok-4.7',
+        'qwen3.8-max',
+        'qwen3.8-flash',
+        'qwen3.7-plus',
+        'minimax-m3.1-flash',
+        'minimax-m3',
+        'mimo-v2.6-pro',
+        'mimo-v2.6-flash',
+        'hy4-preview',
+        'hy3',
+        'longcat-2.0',
+        'step-5-preview',
+        'muse-spark-1.3-contributor',
+        'muse-spark-1.2-contributor',
+        'gemini-4-argon',
+        'beam-free',
+        'iceman-contributor-free'
+      ]
     },
     custom: {
       apiBase: '',
+      defaultModel: '',
       models: []
     }
   },

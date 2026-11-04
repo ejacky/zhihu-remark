@@ -34,26 +34,29 @@
 | 项 | 说明 |
 |---|---|
 | API Key | 必填，只存在本机 |
-| 模型 | 必填，可手填任意模型名；下拉只是建议 |
+| 模型 | 必填。先点「同步模型」从服务商拉取列表再选，也可手填任意模型名 |
 | 深度思考 | 默认开。开：先推理再作答，30~50 秒，质量更好；关：1~3 秒出结果 |
 | 保存历史记录 | 默认开。保留最近 10 条，下面的列表里可查看与清空 |
 
 其余项收在**「高级设置（一般不用改）」**里：提供商、API Base URL、反驳风格、自定义 Prompt 后缀。
 
-- **API Base URL**：留空用该提供商的内置地址；也可填代理 / 镜像 / 自建网关。保存时浏览器会就该域名弹一次授权，拒绝则不保存
-- **反驳风格**：全程生效（卡片里不再切换风格）
+- **提供商**：DeepSeek / Kimi / OpenCode Go / OpenAI / Claude / 自定义。
+- **API Base URL**：内置提供商默认只显示内置地址，不用手填；需要代理 / 镜像时勾选「使用自定义地址」再填。保存时浏览器会就该域名弹一次授权（OpenCode Go 的 `opencode.ai` 也一样），拒绝则不保存。
+- **模型**：「同步模型」会向所选服务商请求模型列表：OpenCode Go 无需 Key，其余提供商先填好 Key（列表来自你的账号）。同步失败时可直接手填模型名。
+- **反驳风格**：全程生效（卡片里不再切换风格）。
 
 ### 4.1 API 设置
 
 | 提供商 | 内置地址 | 说明 |
 |---|---|---|
-| DeepSeek | `https://api.deepseek.com` | 模型名如 `deepseek-flash`、`deepseek-v4-pro` |
+| DeepSeek | `https://api.deepseek.com` | 模型名如 `deepseek-v4-pro`、`deepseek-v4.1-flash` |
 | Kimi | `https://api.moonshot.cn/v1` | |
+| OpenCode Go | `https://opencode.ai/inference/go/openai/v1` | 需订阅 OpenCode Go；点「同步模型」直接选；首次保存会请求 `opencode.ai` 权限 |
 | OpenAI | `https://api.openai.com/v1` | |
-| Claude | `https://api.anthropic.com` | |
-| 自定义 | 无（必填） | 任何 OpenAI 兼容端点，如 OpenCode Go：`https://opencode.ai/inference/go/openai/v1` |
+| Claude | `https://api.anthropic.com/v1` | |
+| 自定义 | 无（必填） | 任何 OpenAI 兼容端点；同步模型时尝试 `{地址}/models`，没有该端点就手填 |
 
-> 用 OpenCode Go 时，模型名填网关上的 ID（如 `deepseek-v4.1-flash`），并先在 Console 的 Privacy › Regions 里选 **Global**，否则会被网关拒绝。
+> 用 OpenCode Go 时，先在 Console 填好 API Key，再点「同步模型」选模型（如 `deepseek-v4.1-flash`）。并先在 Console 的 Privacy › Regions 里选 **Global**，否则会被网关拒绝。
 
 ## 5. 打开设置
 
@@ -67,7 +70,7 @@
 
 **提示「域名未授权」？** 设置页重新保存一次配置，在浏览器弹窗里点「允许」。
 
-**提示「生成被截断」？** 思考与正文共用同一份 token 预算。换一个更"省"的模型，或在设置里调大 Max Tokens。
+**提示「生成被截断」？** 思考与正文共用同一份 token 预算（固定 16384，不再作为设置项）。换一个更省思考预算的模型，或关闭「深度思考」后重试。
 
 **会不会被知乎封号？** 扩展不自动发布、不自动点赞，所有动作都由你手动触发，行为和你自己打字评论一致。
 

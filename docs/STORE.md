@@ -16,7 +16,7 @@
 | 站点权限 | `https://www.zhihu.com/*`<br>`https://api.openai.com/*`<br>`https://api.anthropic.com/*`<br>`https://api.deepseek.com/*`<br>`https://api.moonshot.cn/*` |
 | 可选权限 | `https://*/*`<br>`http://localhost/*`<br>`http://127.0.0.1/*` |
 | 远程代码 | 否 |
-| 同步时间 | 2026-10-29 |
+| 同步时间 | 2026-11-02 |
 <!-- AUTO:END -->
 
 ## 二、上架前检查
@@ -56,14 +56,14 @@
 · 不收集你的浏览记录，不上传数据到开发者服务器
 
 为什么需要你自己的 API Key
-这个工具没有后端。生成的文字直接由你选择的 AI 服务商产出（DeepSeek / Kimi / OpenAI / Claude，或任何 OpenAI 兼容端点）。所以：
+这个工具没有后端。生成的文字直接由你选择的 AI 服务商产出（DeepSeek / Kimi / OpenCode Go / OpenAI / Claude，或任何 OpenAI 兼容端点）。所以：
 · 费用由服务商直接向你收取，扩展不参与计费、不抽成
 · Key 只存在你本机的 chrome.storage.local 里，开发者看不到
 · 你可以用 DeepSeek 这类低价模型，一次生成通常不足一分钱
 
 使用步骤
 1. 安装后点扩展图标，打开设置页
-2. 填 API Key 与模型名（其余用默认即可）
+2. 填 API Key，点「同步模型」选模型（其余用默认即可）
 3. 打开任意知乎回答，点「🛡️ 生成反驳」
 4. 等 30~60 秒（默认开启深度思考），读一遍，按需修改，自己点发送
 
@@ -128,11 +128,11 @@ CWS 的「主机权限理由 / Host permission justification」是一个输入�
 1) https://www.zhihu.com/*（含 zhuanlan.zhihu.com）
 唯一用途：在该站回答的操作栏注入一个按钮、读取当前回答的正文以生成草稿、以及把草稿填进评论输入框。不读取其他页面，不抓取列表页，不修改页面原有内容。该权限在安装时即授予，因为它是扩展的核心工作页面。
 
-2) https://api.openai.com/* 、https://api.anthropic.com/* 、https://api.deepseek.com/* 、https://api.moonshot.cn/*（四个内置 AI 服务商）
+2) https://api.openai.com/* 、https://api.anthropic.com/* 、https://api.deepseek.com/* 、https://api.moonshot.cn/*（四个随安装授予的内置 AI 服务商；OpenCode Go 见第 3 条）
 唯一用途：用户点击「生成反驳」时，用用户自己填写的 API Key 直接向所选服务商的官方接口发送一次 HTTPS 请求并取回文本。改由内置域名承载，是为了让用户开箱可用；用户也可以在设置里改成任何兼容地址。
 
 3) https://*/* 、http://localhost/* 、http://127.0.0.1/*（可选权限，默认不授予）
-只有用户在设置页主动填写自定义 API 地址（自建代理、镜像站、本地模型网关）时，才会就该域名弹一次授权窗口；用户拒绝则不保存配置。未授权的域名，扩展不会发起任何请求。这三条声明为 optional_host_permissions，因此不会出现在安装权限提示中。
+只有用户在设置页主动填写自定义 API 地址（自建代理、镜像站、本地模型网关），或选择 OpenCode Go（其内置地址在 https://opencode.ai/*）并保存 / 点「同步模型」时，才会就该域名弹一次授权窗口；用户拒绝则不保存配置、不发起请求。未授权的域名，扩展不会发起任何请求。这三条声明为 optional_host_permissions，因此不会出现在安装权限提示中。
 
 本扩展不读取或修改上述任何网站的 Cookie、登录凭据，不做批量抓取，不含远程代码，也不把任何数据回传到开发者服务器（无后端）。
 ```
@@ -144,9 +144,9 @@ This extension has a single purpose: draft a comment for a Zhihu answer. Host pe
 
 1) https://www.zhihu.com/* — inject one button into the answer's action bar, read the current answer text to draft a comment, and fill that draft into the comment box. No other pages are read, no crawling, no modification of existing page content.
 
-2) https://api.openai.com/*, https://api.anthropic.com/*, https://api.deepseek.com/*, https://api.moonshot.cn/* — when the user clicks "generate", the extension sends one HTTPS request with the user's own API key to the provider they selected. These are the four built-in providers; users may replace the base URL with any compatible endpoint in settings.
+2) https://api.openai.com/*, https://api.anthropic.com/*, https://api.deepseek.com/*, https://api.moonshot.cn/* — when the user clicks "generate", the extension sends one HTTPS request with the user's own API key to the provider they selected. These are the four built-in providers granted at install time; OpenCode Go is covered in item 3. Users may replace the base URL with any compatible endpoint in settings.
 
-3) https://*/*, http://localhost/*, http://127.0.0.1/* — declared as optional_host_permissions and NOT granted by default. Requested at save time only when the user types a custom API base URL (proxy, mirror, local gateway). If denied, the config is not saved and no request is made.
+3) https://*/*, http://localhost/*, http://127.0.0.1/* — declared as optional_host_permissions and NOT granted by default. Requested at save time only when the user types a custom API base URL (proxy, mirror, local gateway), or selects OpenCode Go (whose built-in base URL is under https://opencode.ai/*) and saves or clicks "sync models". If denied, the config is not saved and no request is made.
 
 The extension does not read or modify cookies or login credentials on any site, does not crawl, contains no remote code, and sends nothing to the developer (there is no backend).
 ```
@@ -197,7 +197,7 @@ The extension does not read or modify cookies or login credentials on any site, 
 ```
 测试说明：
 1. 安装后点击工具栏图标 → 直接打开设置页（本扩展没有弹窗面板）。
-2. 填写 API Key 与模型名。测试可用 DeepSeek：注册后免费额度足够跑完整个流程；API 地址留空即用默认 https://api.deepseek.com，模型填 deepseek-flash。
+2. 填写 API Key。测试可用 DeepSeek：注册后免费额度足够跑完整个流程；API 地址不用填（默认 https://api.deepseek.com），点「同步模型」从账号列表里选模型（也可手填 deepseek-v4-pro）。
    （若需要我方提供一次性测试 Key，请通过开发者邮箱联系，我会在审核期内提供。）
 3. 打开任意知乎回答页（例如 https://www.zhihu.com/question/19551147），回答下方会出现「🛡️ 生成反驳」按钮。
 4. 点击后约 30~60 秒出结果（默认开启深度思考）。结果是一段可直接发布的评论草稿。
@@ -205,8 +205,8 @@ The extension does not read or modify cookies or login credentials on any site, 
 
 权限说明：
 · 知乎域名仅用于注入按钮、读取回答正文、填充评论框；
-· 四个 AI 域名是内置服务商接口，仅在用户点击生成时用其自己的 Key 请求；
-· https://*/* 是可选权限，只有填写自定义 API 地址时才会弹窗申请，默认不授予。
+· 四个 AI 域名随安装授予，是内置服务商接口，仅在用户点击生成时用其自己的 Key 请求；
+· https://*/* 是可选权限，只有填写自定义 API 地址，或选择 OpenCode Go（opencode.ai）并保存 / 同步模型时才会弹窗申请，默认不授予。
 ```
 
 ## 十、隐私政策（全文，粘进 Gist / 公开页）
@@ -214,7 +214,7 @@ The extension does not read or modify cookies or login credentials on any site, 
 ```
 # 知乎反驳助手 隐私政策
 
-最后更新：2026-10-29
+最后更新：2026-11-02
 
 ## 一、我们不收集什么
 
@@ -224,12 +224,13 @@ The extension does not read or modify cookies or login credentials on any site, 
 
 全部保存在你浏览器的 chrome.storage.local 中，卸载扩展即删除：
 1. 你自己填写的 API Key、模型名称、API 地址等设置项；
-2. 最近 10 条生成记录（问题标题、作者、正文草稿、时间）。
+2. 最近 10 条生成记录（问题标题、作者、正文草稿、时间）；
+3. 从服务商同步到的模型名称与同步时间（不含 API Key）。
 这些数据不会上传到开发者，也不会随 Chrome 账户同步。
 
 ## 三、什么数据会离开你的设备
 
-只有一种情况：你点击「生成反驳」时，扩展会把当前回答的标题与正文，连同你的 API Key，通过 HTTPS 直接发送给你在设置里选定的 AI 服务商（DeepSeek / Kimi / OpenAI / Claude，或你自行填写的兼容端点）。
+只有一种情况：你点击「生成反驳」时，扩展会把当前回答的标题与正文，连同你的 API Key，通过 HTTPS 直接发送给你在设置里选定的 AI 服务商（DeepSeek / Kimi / OpenCode Go / OpenAI / Claude，或你自行填写的兼容端点）。
 开发者不参与、也无法获取这次通信的内容。该服务商如何处理数据，适用其自身的隐私政策。
 
 ## 四、我们不会做的事

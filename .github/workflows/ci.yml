@@ -1,0 +1,160 @@
+name: ci
+
+# 每次推 main / 提 PR 跑三套 Node 测试；推到 main 且检查全绿后，按提交信息里的
+# Done #N 关闭 issue；推 v* tag 且检查全绿后把本次发布的 issue 归到同名 milestone。
+#
+# 不写 GitHub 的 Closes / Fixes / Resolves：GitHub 会在推送瞬间关 issue，
+# 抢在测试前面，测试红了也照关。关闭只认 Done #N。
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Node checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Prompt 回归网
+        run: node tests/prompt/rules.test.mjs
+
+      - name: 文档完整性
+        run: node tests/docs.test.mjs
+
+      - name: 设置页模型目录
+        run: node tests/options/models.test.mjs
+
+  # 关闭只认提交信息里的 Done #N：GitHub 自己的关闭关键词会在推送瞬间生效，
+  # 比检查早，测试红了也会把没做完的任务标成完成。
+  close-issues:
+    name: Close the issues this push finishes
+    needs: [checks]
+    if: github.ref == 'refs/heads/main' && needs.checks.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: close what the commit messages say they close
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HEAD_SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+
+          numbers="$(
+            jq -r '.commits[]?.message' "$GITHUB_EVENT_PATH" |
+              grep -oiE '\bdone\b[[:space:]]*:?[[:space:]]*#[0-9]+' |
+              grep -oE '[0-9]+$' | sort -un || true
+          )"
+          if [ -z "$numbers" ]; then
+            echo "no Done #N marker in this push; nothing to close"
+            exit 0
+          fi
+          echo "Done markers: $numbers"
+
+          for number in $numbers; do
+            # 读后写：已关闭的、其实是 PR 的、不存在的编号都跳过，
+            # 这样重推 / 变基不会重复留言，也不会把评论写错地方。
+            if ! resource="$(gh api "repos/$REPO/issues/$number" \
+                 --jq '.state + " " + (if .pull_request then "pull request" else "issue" end)' 2>/dev/null)"; then
+              echo "#$number does not exist in $REPO; skipping"
+              continue
+            fi
+            if [ "$resource" != "open issue" ]; then
+              echo "#$number is $resource; skipping"
+              continue
+            fi
+            gh issue close "$number" --repo "$REPO" --reason completed \
+              --comment "Node 检查全部通过（提交 \`$HEAD_SHA\`，[CI 运行]($RUN_URL)），按提交信息里的 \`Done #$number\` 标记自动关闭。"
+            echo "#$number closed"
+          done
+
+  # 发布归档：区间 = 上一个 v* tag..本 tag，取区间内的 Done #N；
+  # 只给已关闭且没有 milestone 的 issue 打标，规划时手工设过的不覆盖。
+  mark-release:
+    name: Put this release's issues in its milestone
+    needs: [checks]
+    if: startsWith(github.ref, 'refs/tags/v') && needs.checks.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # git describe 要读 tag，浅克隆没有
+          fetch-depth: 0
+
+      - name: fill the milestone
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if previous="$(git describe --tags --abbrev=0 --match 'v*' "${TAG}^" 2>/dev/null)"; then
+            range="${previous}..${TAG}"
+          else
+            previous=""
+            range="${TAG}"
+          fi
+          echo "release ${TAG}: issues from ${previous:-the first commit}..${TAG}"
+
+          numbers="$(
+            git log --format='%B' "$range" |
+              grep -oiE '\bdone\b[[:space:]]*:?[[:space:]]*#[0-9]+' |
+              grep -oE '[0-9]+$' | sort -un || true
+          )"
+          if [ -z "$numbers" ]; then
+            echo "no Done #N marker in this release; nothing to record"
+            exit 0
+          fi
+
+          # 同名 milestone 开 / 关都复用，避免把同一个版本拆成两个
+          milestone="$(gh api "repos/$REPO/milestones?state=all&per_page=100" \
+            --jq ".[] | select(.title == \"$TAG\") | .number" || true)"
+          if [ -z "$milestone" ]; then
+            milestone="$(gh api "repos/$REPO/milestones" --method POST \
+              -f title="$TAG" --jq .number)"
+            echo "created the milestone $TAG (#$milestone)"
+          else
+            echo "the milestone $TAG already exists (#$milestone)"
+          fi
+
+          for number in $numbers; do
+            resource="$(gh api "repos/$REPO/issues/$number" \
+              --jq '"\(.state) \(.milestone.number // 0) \(.pull_request != null)"' 2>/dev/null)" ||
+              { echo "#$number does not exist; skipping"; continue; }
+            read -r state current is_pull_request <<< "$resource"
+            if [ "$is_pull_request" = "true" ]; then
+              echo "#$number is a pull request; skipping"
+              continue
+            fi
+            if [ "$state" != "closed" ]; then
+              echo "#$number is $state; skipping"
+              continue
+            fi
+            if [ "$current" != "0" ]; then
+              echo "#$number already has milestone $current; skipping"
+              continue
+            fi
+            gh api "repos/$REPO/issues/$number" --method PATCH \
+              -F milestone="$milestone" > /dev/null
+            echo "#$number -> $TAG"
+          done

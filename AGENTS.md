@@ -28,11 +28,12 @@ manifest 改完必须重新加载扩展。
 日志：页面 Console 前缀 [知乎反驳助手]；SW 日志在扩展页的 "Service Worker"。
 ```
 
-没有构建命令。自动化测试两套，共 14 项断言，十几毫秒：
+没有构建命令。自动化测试三套，全部零依赖、不联网，十几毫秒：
 
 ```powershell
 node tests/prompt/rules.test.mjs     # Prompt 回归网：L0 判据、Prompt 护栏、golden 集
 node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、docs 目录清单
+node tests/options/models.test.mjs   # 设置页模型目录：端点、鉴权头、响应解析
 ```
 
 > `node --test tests/` 在某些沙箱下会因 spawn 被拒（EPERM），直接跑单文件即可。
@@ -48,6 +49,8 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 - [ ] 关掉卡片再打开同一回答：恢复结果且**不重复请求 AI**
 - [ ] 失败态是可读中文错误 + 重试按钮
 - [ ] 设置页保存：地址留空回退、非法地址拦截、权限弹窗
+- [ ] 设置页「同步模型」：OpenCode Go 不填 Key 可同步；Key 错误时是可读中文提示，原列表不被清空
+- [ ] 内置 Base URL 默认只显示地址；勾选「使用自定义地址」后才出现输入框，取消后保存回内置地址
 
 交付时写明实际验证了什么、没验证什么，不要用「应该没问题」代替。
 
@@ -58,7 +61,7 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 | `src/shared/` | 常量与默认配置、工具、域名权限、OpenCode 网关、Prompt | `CONSTANTS` `Utils` `HostAccess` `OpenCode` `Prompts` |
 | `src/background/` | 消息路由、配置与历史存储、AI 请求/重试 | `Storage` `API` |
 | `src/content/` | 正文提取、按钮注入、卡片、评论框填充 | `Extractor` `Injector` `UI` |
-| `src/options/` | 设置页（点图标直接打开，无 popup） | — |
+| `src/options/` | 设置页（点图标直接打开，无 popup）；`models.js` 是设置页专用模块 | `ModelCatalog` |
 
 **没有模块系统**：模块是 `const Foo = {...}` 全局对象，靠加载顺序共享；浏览器代码不用 `import` / `export` / `require`。
 
@@ -69,6 +72,7 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 3. `src/options/index.html` → `<script>`
 
 加载顺序：`constants → utils → permissions/opencode → prompts → storage/api → 业务模块`。
+设置页专用模块只登记到 `src/options/index.html`（如 `models.js`），不要塞进 content script / background。
 
 ## 4. 编码约定
 
@@ -90,6 +94,7 @@ node tests/docs.test.mjs             # 文档完整性：@doc 指向与锚点、
 6. **Service Worker 随时被回收**：会话状态不要放后台内存，放 `chrome.storage.local` 或内容脚本。
 7. **卡片缓存按回答维度**：`Injector._panelCache` 存 `{ state, cachedAt }`，关闭可恢复；点「填入评论框」后清除。改 key 逻辑要同步清理。
 8. **内容脚本只匹配** `www.zhihu.com/*` 和 `zhuanlan.zhihu.com/p/*`；扩页面必须改 manifest 并实测。
+9. **模型列表来自服务商**：内置只有 OpenCode Go 的公开快照，其余提供商靠设置页「同步模型」；不要把模型 ID 当成稳定常量写进 UI 或 Prompt。
 
 ## 6. 文档
 

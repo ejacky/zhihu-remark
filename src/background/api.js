@@ -29,6 +29,7 @@ const API = {
       case 'openai':
       case 'deepseek':
       case 'kimi':
+      case 'opencode-go':
         return this._callOpenAICompatible(provider, content, config, regenerateHint);
       case 'anthropic':
         return this._callAnthropic(content, config, regenerateHint);
@@ -46,7 +47,13 @@ const API = {
   async _callOpenAICompatible(provider, content, config, regenerateHint) {
     const apiKey = config.apiKey;
     if (!apiKey) {
-      const providerNames = { openai: 'OpenAI', deepseek: 'DeepSeek', kimi: 'Kimi', custom: '自定义' };
+      const providerNames = {
+        openai: 'OpenAI',
+        deepseek: 'DeepSeek',
+        kimi: 'Kimi',
+        'opencode-go': 'OpenCode Go',
+        custom: '自定义'
+      };
       throw new Error(`请先在扩展设置中配置 ${providerNames[provider] || provider} API Key`);
     }
 
@@ -54,7 +61,9 @@ const API = {
     const apiBase = HostAccess.normalizeApiBase(config.apiBase)
       || CONSTANTS.PROVIDER_DEFAULTS[provider]?.apiBase
       || '';
-    const model = config.model || CONSTANTS.PROVIDER_DEFAULTS[provider]?.models?.[0] || CONSTANTS.DEFAULT_CONFIG.model;
+    const model = config.model
+      || CONSTANTS.PROVIDER_DEFAULTS[provider]?.defaultModel
+      || CONSTANTS.DEFAULT_CONFIG.model;
 
     // token 预算：思考与正文共用 completion_tokens，只给 4096 会被思考吃光
     // （实测思考 2300~3500 + 正文 ~800）。预算固定，不再暴露给用户。

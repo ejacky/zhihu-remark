@@ -21,10 +21,13 @@
       </div>
 
       <div class="form-group">
-        <label for="model">模型</label>
-        <input type="text" id="model" list="modelOptions" placeholder="输入模型名称" autocomplete="off">
+        <div class="form-label-row">
+          <label for="model">模型</label>
+          <button type="button" class="btn btn--link btn--small" id="btnSyncModels">同步模型</button>
+        </div>
+        <input type="text" id="model" list="modelOptions" placeholder="点「同步模型」拉取，或直接输入模型名" autocomplete="off">
         <datalist id="modelOptions"></datalist>
-        <span class="form-hint" id="modelHint">可以直接手填任意模型名，建议列表只是参考</span>
+        <span class="form-hint" id="modelHint" aria-live="polite">点「同步模型」从服务商拉取列表，或直接输入模型名</span>
       </div>
 
       <label class="toggle-item">
@@ -60,6 +63,10 @@
               <span>Kimi</span>
             </label>
             <label class="radio-label">
+              <input type="radio" name="provider" value="opencode-go">
+              <span>OpenCode Go</span>
+            </label>
+            <label class="radio-label">
               <input type="radio" name="provider" value="openai">
               <span>OpenAI</span>
             </label>
@@ -76,7 +83,14 @@
 
         <div class="form-group">
           <label for="apiBase">API Base URL</label>
-          <input type="text" id="apiBase" placeholder="https://api.example.com/v1" autocomplete="off">
+          <div class="builtin-base" id="builtinBaseRow" hidden>
+            <code id="builtinBaseValue"></code>
+            <label class="builtin-base__override">
+              <input type="checkbox" id="apiBaseOverride">
+              <span>使用自定义地址</span>
+            </label>
+          </div>
+          <input type="text" id="apiBase" placeholder="https://api.example.com/v1" autocomplete="off" hidden>
           <span class="form-hint" id="apiBaseHint">留空使用该提供商的内置地址；也可填代理 / 镜像地址</span>
         </div>
 
@@ -116,6 +130,7 @@
   </div>
   <script src="../shared/constants.js"></script>
   <script src="../shared/permissions.js"></script>
+  <script src="models.js"></script>
   <script src="index.js"></script>
 </body>
 </html>

@@ -50,6 +50,7 @@
 | `background/storage.js` | 配置读写与迁移、历史增删 | `Storage` |
 | `background/api.js` | 请求构造、响应解析、失败分类与重试 | `API` |
 | `background/index.js` | 消息路由 | — |
+| `options/models.js` | 设置页模型列表端点、鉴权头、响应解析与本地缓存 | `ModelCatalog` |
 | `content/extractor.js` | 多策略提取正文/标题/作者 | `Extractor` |
 | `content/injector.js` | 注入按钮、观察 DOM、填充评论框、卡片缓存 | `Injector` |
 | `content/ui.js` | 卡片、通知 | `UI` |
@@ -138,11 +139,29 @@ POST {apiBase}/chat/completions
 
 Claude 走 `_callAnthropic`（`/v1/messages`，取 `content` 数组里的 `text` 块），仍为旧的结构化路径，尚未迁移。
 
+OpenCode Go 作为 `opencode-go` 提供商走同一条 OpenAI 兼容通路：Base URL 为 `https://opencode.ai/inference/go/openai/v1`，由 §4.3 自动附加会话头；模型列表见 §4.4。
+
 ### 4.3 OpenCode 网关会话
 
-`apiBase` 命中 `opencode.ai` 时自动附带 `x-opencode-session`（按「回答」维度派生，确定性、无需持久化）。网关还要求客户端标识，当前附带 `x-opencode-client`。
+`apiBase` 命中 `opencode.ai` 时自动附带 `x-opencode-session`（按「回答」维度派生，确定性、无需持久化）。客户端标识由浏览器自带的 User-Agent 提供，扩展不额外伪造 `x-opencode-client`。
 
 网关对 DeepSeek 专有参数是白名单转发：`thinking` 与 `reasoning_effort` 会被校验（非法值返回 422），超出官方文档的枚举值（如 `adaptive`）不要使用。
+
+### 4.4 模型列表同步
+
+设置页的「同步模型」按提供商请求模型列表，结果按提供商缓存（§5.3）；内置列表只作离线兜底，不再把模型 ID 写死在 UI 里。
+
+| 提供商 | 端点 | 鉴权 |
+|---|---|---|
+| OpenCode Go | `https://opencode.ai/inference/go/v1/models` | 无（公开接口） |
+| OpenCode Console / Zen（自定义地址命中 `opencode.ai`） | `https://opencode.ai/inference/v1/models` | 无 |
+| OpenAI / DeepSeek / Kimi | `{apiBase}/models` | `Authorization: Bearer <Key>` |
+| Claude | `{apiBase}/models?limit=1000` | `x-api-key` + `anthropic-version` |
+| 自定义（非 OpenCode） | `{base}/models` | Bearer，尽力而为；没有该端点时提示手填 |
+
+请求从设置页直接发出，不经过 background；`opencode.ai` 不在 `host_permissions` 里，首次同步 / 保存时用 `chrome.permissions.request()` 申请 `https://opencode.ai/*`（§6.3）。OpenCode 的公开端点不发送 API Key。
+
+响应统一解析成 `[{ id, name }]`：兼容 `{ data: [...] }`、纯数组、`{ models: [...] }`，按 id 去重，最多 500 条。失败按 HTTP 状态翻译成中文提示（401/403 Key 无效、404 无端点、429 太频繁、5xx 暂时不可用），同步失败不清空已有列表。
 
 ## 5. 存储
 
@@ -165,6 +184,8 @@ Claude 走 `_callAnthropic`（`/v1/messages`，取 `content` 数组里的 `text`
 
 v4 删掉了 `errorTypes` / `features` / `strictness` / `temperature` / `maxTokens`——面板与 Prompt 都不再需要它们；`features.enableHistory` 提到顶层。
 
+同步到的模型列表不写进配置对象，单独存 `zhihu_remark_model_catalog`（§5.3），因此本次改动不升 `CONFIG_SCHEMA_VERSION`。
+
 ```jsonc
 // zhihu_remark_history —— 数组，最多 10 条，倒序
 { "id": "...", "timestamp": 1715500000000, "questionTitle": "...", "author": "...",
@@ -176,6 +197,25 @@ v4 删掉了 `errorTypes` / `features` / `strictness` / `temperature` / `maxToke
 - 只用 `chrome.storage.local`（约 5~10MB），**不随 Chrome 账户同步**，卸载即丢。
 - 历史固定 10 条，写入时截断；不存在分页。
 - **配置迁移**：结构变更时 `CONSTANTS.CONFIG_SCHEMA_VERSION` +1，并在 `CONFIG_MIGRATIONS` 补一条 `源版本 → 下一版本` 的函数。无版本号的旧数据视为 v1；版本比当前新（用户回退过扩展）按当前版本归一。迁移函数必须幂等、只做补齐/改名/换结构。
+
+### 5.3 模型目录缓存
+
+```jsonc
+// zhihu_remark_model_catalog —— 按 provider 分组的同步结果
+{
+  "version": 1,
+  "providers": {
+    "opencode-go": {
+      "models": [{ "id": "deepseek-v4.1-flash", "name": "DeepSeek V4.1 Flash" }],
+      "fetchedAt": 1730600000000
+    }
+  }
+}
+```
+
+- 只存模型 ID / 显示名 / 同步时间，**不存 API Key**、不存请求头。
+- 每个 provider 最多 500 条（`ModelCatalog.MAX_MODELS`）；读取失败或结构不合法时回退到 `PROVIDER_DEFAULTS[provider].models`（目前只有 OpenCode Go 有公开快照）。
+- 缓存不是配置的一部分，清空配置或迁移配置都不动它；用户重新点「同步模型」即刷新。
 
 ## 6. 安全
 
@@ -193,12 +233,13 @@ v4 删掉了 `errorTypes` / `features` / `strictness` / `temperature` / `maxToke
 
 | 权限 | 用途 |
 |---|---|
-| `storage` | 配置与历史 |
-| `host_permissions`：`www.zhihu.com`、4 个内置 API 域 | 注入与直连 |
-| `optional_host_permissions`：`https://*/*`、`http://localhost/*`、`http://127.0.0.1/*` | 用户自定义地址时按域名申请 |
-| `activeTab` | **未被使用**，待删（多一条安装提示里的权限） |
+| `storage` | 配置、历史与模型目录缓存 |
+| `host_permissions`：`www.zhihu.com`、4 个内置 API 域（OpenAI / Anthropic / DeepSeek / Kimi） | 注入与直连 |
+| `optional_host_permissions`：`https://*/*`、`http://localhost/*`、`http://127.0.0.1/*` | 用户自定义地址、以及 OpenCode Go 的 `https://opencode.ai/*`，按域名申请 |
 
-自定义域名必须在用户点击「保存」的同一调用帧内 `chrome.permissions.request()`，先 `await` 再申请会被浏览器拒绝。
+OpenCode Go 不写进 `host_permissions`，以免安装提示多一条权限；保存配置或点「同步模型」时在用户手势的同步帧内申请 `https://opencode.ai/*`。该域名的 `/models` 是公开接口，同步时不发送 Key。
+
+自定义域名必须在用户点击「保存」的同一调用帧内 `chrome.permissions.request()`，先 `await` 再申请会被浏览器拒绝；「同步模型」同理。
 
 ## 7. 错误处理
 
