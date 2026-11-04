@@ -31,6 +31,7 @@
 - ✅ 默认模型统一走 `PROVIDER_DEFAULTS.defaultModel`，不再用 `models[0]` 兜底
 - ✅ 修复：OpenCode Go 配自定义代理时请求被改写到 opencode.ai、API Key 发往错误域名（#17）
 - ✅ CI：三套零依赖测试 + `close-issues`（`Done #N`）+ 打 tag 时的 milestone 归档
+- ✅ 2026-11-04 真机验收通过：设置页同步模型、内置 Base URL、代理同步（#6）
 
 ### v2.0.2（2026-10-29）— 图标修正 · **首次上架**
 - ✅ **2026-10-29 提交审核并通过，已上线**（本项目的首个商店版本）
