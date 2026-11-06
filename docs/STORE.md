@@ -22,8 +22,8 @@
 ## 二、上架前检查
 
 - [x] ~~删掉 `activeTab` 权限~~：2.0.1 已删除，现在只剩 `storage`
-- [ ] 隐私政策已托管到公开可访问的 URL（仓库是 private，需 Gist / 自有页面）
-- [ ] 截图按 §八 重拍，别复用旧图（2.0.0 删了 popup，旧图已与产品不符）
+- [x] 隐私政策已托管到公开可访问的 URL：<https://gist.github.com/ejacky/3a3ed5fd03b62fe917ac4a7f8576a317>（仓库是 private，用 Gist 公开）
+- [ ] 截图按 §八 重拍，别复用旧图（2.0.0 删了 popup，旧图已与产品不符；Edge 还对尺寸和内容有额外要求，见 §十一 11.4）
 - [ ] 审核备注里写明「需要用户自备 API Key」并提供测试步骤，否则审核员无法验证
 
 ## 三、商店信息（中文）
@@ -188,11 +188,15 @@ The extension does not read or modify cookies or login credentials on any site, 
 
 > 2026-11-04：第 1 张已替换为 2.0.3 版设置页（新增「同步模型」与提供商选择）；2.0.2 的旧图存于 `dist/store-shots/archive/`。当前截图选中「自定义」并展示了 opencode.ai 网关，若要按下面的脱敏口径，用 DeepSeek + 留空地址重拍即可。
 
+> **Edge 上传前必须重拍**：Edge 只接受 640×480 或 1280×800；第 2、3 张是 640×400，尺寸不合规。内容上，第 1 张暴露了 `opencode.ai/zen/go` 私有网关；第 2、3 张含作者昵称，第 3 张还含政治/历史话题（「人民公社」等）。**三张都不要直接用于 Edge**，重拍口径见 §十一 11.4。
+
 拍摄注意：
 
 - 设置页截图**不要暴露真实配置**（自定义网关地址、私有模型名），用 DeepSeek + 留空地址重拍
+- 按钮/结果截图**不要露出作者昵称、头像**，不要用政治/历史争议话题；用科技、健康、产品参数这类中性内容
 - 窗口宽度调到 1280 左右再截，否则页面居中会留大片空白，裁切救不回来
 - 2.0.0 删掉了 popup，不要复用带小弹窗的旧截图
+- Edge 截图统一 1280×800；至少 3 张，最多 6 张
 
 ## 九、审核备注（Notes for reviewer）
 
@@ -216,7 +220,9 @@ The extension does not read or modify cookies or login credentials on any site, 
 ```
 # 知乎反驳助手 隐私政策
 
-最后更新：2026-11-02
+最后更新：2026-11-04
+
+本政策适用于「知乎反驳助手」的 Chrome 与 Microsoft Edge 版本。
 
 ## 一、我们不收集什么
 
@@ -256,5 +262,97 @@ The extension does not read or modify cookies or login credentials on any site, 
 
 ## 八、联系方式
 
-如有疑问，请通过应用商店页面的开发者联系方式或项目仓库的 issue 与我联系。
+如有疑问，请通过 Chrome 应用商店或 Microsoft Edge 加载项页面上的开发者联系方式与我联系。
 ```
+
+> 公开页（2026-11-04 已发布）：<https://gist.github.com/ejacky/3a3ed5fd03b62fe917ac4a7f8576a317>
+> 更新本段后请同步 Gist，两处内容必须一致。
+
+## 十一、Microsoft Edge 加载项
+
+> Edge 与 Chrome 同为 Chromium，当前 MV3 包可直接复用。下面的差异只在**商店素材与后台字段**，不改运行时代码。
+
+### 11.1 包
+
+- 与 CWS 用**同一个 zip**：`dist/zhihu-remark-<version>.zip`；不要为 Edge 单独改 manifest。
+- 根目录必须有 `manifest.json`；不要包含 `docs/`、`tests/`、`scripts/`、`dist/`。
+- 不上传 `.crx`、`.pem`、`key`、`update_url`。
+- 提交前核对 zip 内的 `manifest.json` 与工作区一致（SHA256）。
+
+### 11.2 开发者账号
+
+- 入口：<https://partner.microsoft.com/dashboard/microsoftedge/public/login>
+- 注册 Microsoft Edge 扩展开发者账号，按页面完成个人/组织验证。
+- 认证时长：最多 7 个工作日。
+
+### 11.3 商店字段
+
+| 字段 | 填什么 |
+|---|---|
+| 名称 | 知乎反驳助手（来自 manifest，只读） |
+| 简短说明 | 来自 manifest 的 `description`（只读） |
+| 详细说明 | §三「详细说明」全文；Edge 要求 ≥250 字符，中文版足够 |
+| 类别 | Productivity |
+| 语言 | 中文（简体）；当前包只有中文，先不做英文 listing |
+| 市场 | 所有市场（或中文市场） |
+| 网站 | 可填隐私政策公开页 |
+| 支持联系 | 使用 CWS 后台同一个开发者邮箱；仓库是 private，不要把 GitHub Issues 当公开入口 |
+| 成人内容 | 否 |
+
+搜索词（最多 7 个，单个 ≤30 字符）：`知乎`、`反驳`、`AI 评论`、`评论草稿`、`Chrome 扩展`、`DeepSeek`、`知乎助手`。
+
+### 11.4 素材
+
+| 素材 | 要求 | 文件 |
+|---|---|---|
+| Logo | 300×300（最低 128×128） | `dist/store-shots/edge/logo-300.png` |
+| 小促销图 | 440×280（可选） | `dist/store-shots/edge/small-promo-440x280.png` |
+| 大促销图 | 1400×560（可选） | `dist/store-shots/edge/large-promo-1400x560.png` |
+| 截图 | 640×480 或 1280×800，最多 6 张 | **待重拍**，见下 |
+
+截图重拍要求（现有三张都不适合直接上传）：
+
+1. **设置页**：选 DeepSeek、API Base 留空 / 取消「使用自定义地址」、API Key 打码；不要出现 `opencode.ai/zen/go` 之类的私有网关。
+2. **按钮位置**：中性话题（科技、健康、产品参数类），不要政治/历史争议，不要露出作者昵称与头像。
+3. **结果卡片**：正文完整可见，「填入评论框 / 换个说法 / 关闭」三个动作都在画面内。
+4. 尺寸统一 1280×800；至少 3 张，最多 6 张。
+
+### 11.5 隐私页
+
+| 问题 | 选择 |
+|---|---|
+| 单一用途 | 为知乎回答生成评论草稿并填入评论框，由用户审核后自行发布。 |
+| 权限理由 | `storage`；5 个 `host_permissions`；`optional_host_permissions` 说明默认不授予、仅自定义 API / OpenCode 时申请。 |
+| 远程代码 | 否。 |
+| 数据使用 | 网站内容 + 身份验证信息；不出售；无开发者服务器。 |
+| 隐私政策 URL | <https://gist.github.com/ejacky/3a3ed5fd03b62fe917ac4a7f8576a317> |
+
+### 11.6 认证备注
+
+```
+需自备 API Key（无内置额度）。测试步骤：
+1. 安装后点工具栏图标 → 打开设置页（本扩展没有 popup）。
+2. 选 DeepSeek，填 API Key；API Base 留空（默认 https://api.deepseek.com），点「同步模型」选一个模型。
+3. 打开任意知乎回答页（例如 https://www.zhihu.com/question/19551147），回答操作栏出现「🛡️ 生成反驳」。
+4. 点击后约 30~60 秒出结果（默认开启深度思考）；「填入评论框」只写入输入框，扩展不会自动发布。
+5. 若需要一次性测试 Key，请通过商店页面的开发者联系方式联系，审核期内提供；审核结束后撤销。
+
+权限说明：
+· 知乎域名仅用于注入按钮、读取回答正文、填充评论框；
+· 四个 AI 域名随安装授予，是内置服务商接口，仅在用户点击生成时用其自己的 Key 请求；
+· https://*/* 是可选权限，只在填写自定义 API 地址，或选择 OpenCode Go（opencode.ai）并保存 / 同步模型时弹窗申请，默认不授予。
+```
+
+> 文案与截图不要出现「自动怼人 / 批量反击」；统一用「评论草稿 / 人工发布」口径，避免被按对抗性自动化工具审核。
+
+### 11.7 提交清单
+
+- [ ] 隐私政策 URL 可公开访问
+- [ ] zip 在 Partner Center 校验通过
+- [ ] Logo 300×300、促销图尺寸合规
+- [ ] 截图 1280×800、内容中性、无作者信息
+- [ ] 详细说明 ≥250 字符
+- [ ] 权限理由与 manifest 一致
+- [ ] 文案不含「自动 / 批量」暗示，统一「草稿 / 人工发布」
+- [ ] 认证备注含 BYOK 测试步骤与一次性 Key 说明
+- [ ] 审核通过后回写 README / ROADMAP
