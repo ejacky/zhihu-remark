@@ -51,6 +51,7 @@ node tests/options/models.test.mjs   # 设置页模型目录：端点、鉴权�
 - [ ] 设置页保存：地址留空回退、非法地址拦截、权限弹窗
 - [ ] 设置页「同步模型」：OpenCode Go 不填 Key 可同步；Key 错误时是可读中文提示，原列表不被清空
 - [ ] 内置 Base URL 默认只显示地址；勾选「使用自定义地址」后才出现输入框，取消后保存回内置地址
+- [ ] Edge：同一份包在 Edge 156+ 走一遍以上清单（同内核，但权限弹窗、工具栏溢出、深色模式需实测）
 
 交付时写明实际验证了什么、没验证什么，不要用「应该没问题」代替。
 
@@ -148,26 +149,32 @@ node tests/options/models.test.mjs   # 设置页模型目录：端点、鉴权�
 [ ] 手工过一遍 AGENTS §2 的验收清单
 
 提交审核
-[ ] git tag -a vX.Y.Z -m "X.Y.Z submitted to CWS"
+[ ] CWS / Edge 用同一版本、同一个 zip；同一版本只打一次 tag
+[ ] git tag -a vX.Y.Z -m "X.Y.Z submitted to stores"
 [ ] git push && git push origin vX.Y.Z
-[ ] 上传 zip；核对后台权限提示与 manifest 一致
-[ ] 审核备注写明"需自备 API Key"的测试步骤
+[ ] CWS：上传 zip；核对后台权限提示与 manifest 一致
+[ ] Edge：同一 zip 上传 Partner Center；字段、隐私理由、素材按 docs/STORE.md §十一
+[ ] 审核备注写明"需自备 API Key"的测试步骤；Edge 另附一次性测试 Key 说明
 
 上线后
 [ ] ROADMAP 追加"审核通过 · 已上线"（不改 tag）
-[ ] 商店后台单独上传 128 图标（不从包里读）
+[ ] CWS：商店后台单独上传 128 图标（不从包里读）
+[ ] Edge：审核通过后回写 README / ROADMAP 的加载项链接
 [ ] GitHub Release 附上同一个 zip：
     gh release create vX.Y.Z dist/zhihu-remark-X.Y.Z.zip \
       --title "vX.Y.Z — <一句话>" --notes-file <notes.md>
     只为「真的上架过」的版本建 release；里程碑 tag 不要建
 ```
 
-## 8. 当前状态（2026-10-29）
+## 8. 当前状态（2026-11-06）
 
-**线上版本 `2.0.2`**（tag `v2.0.2` → `9fa4c9c`），2026-10-29 通过 CWS 审核并上线，是本项目首个商店版本。`main` 即线上代码。
+**线上版本 `2.0.3`**（tag `v2.0.3` → `6d0cc9e`），2026-11-06 通过 CWS 审核并上线；`2.0.2` 为上一版本。
 
 - ✅ v2.0 重构（B1~B4）已在 2.0.0 收口：生成链路改纯文本、面板砍到 3 个动作、设置页 4 项、样式单真源
 - ✅ 上架配套：`docs/STORE.md` 文案、`scripts/sync-store.mjs` 与 tag 触发的自动同步、图标改透明圆角
-- 版本号已消耗 `2.0.0` / `2.0.1`（均未上架，仅内部里程碑，见 ROADMAP）；下一个版本从 **2.0.3** 起
-- 待办：思考模式偶发不触发（`reasoning_tokens=0`）；商店宣传图块（440×280 / 1400×560）未做；历史记录单条删除与导出
+- ✅ Edge 兼容性静态检查通过：代码只用 Chromium 公共 API，无需改运行时；本机 Edge 156，真机清单待跑
+- ✅ Edge 商店素材：`dist/store-shots/edge/` 下 `logo-300.png`、`small-promo-440x280.png`、`large-promo-1400x560.png` 已生成；截图待按 `docs/STORE.md` §十一 重拍
+- ✅ 隐私政策已发布公开 Gist：<https://gist.github.com/ejacky/3a3ed5fd03b62fe917ac4a7f8576a317>
+- 版本号已消耗 `2.0.0` / `2.0.1`（均未上架，仅内部里程碑，见 ROADMAP）；`2.0.2` / `2.0.3` 已上线；下一个新版本从 **2.0.4** 起，不复用 `2.0.3`
+- 待办：思考模式偶发不触发（`reasoning_tokens=0`）；Edge 加载项 Partner Center 提交（截图重拍、一次性测试 Key）；历史记录单条删除与导出
 - 注：本轮会话未记录 2.0.2 的真机回归明细，后续任何改动仍需按 §2 清单手动验
